@@ -29,10 +29,7 @@ class ProjectFile(project: Project, log: Logger) {
   </natures>
 </projectDescription>
 
-    def getProjectDescription: String = project.asInstanceOf[SbtEclipsifyPlugin].projectDescription.get match {
-      case Some(desc) => desc
-      case None =>  project.projectName.get + " " + project.projectVersion.get
-    }
+    def getProjectDescription =  project.asInstanceOf[SbtEclipsifyPlugin].projectDescription.value
 
     def createSubProjects = ""
 

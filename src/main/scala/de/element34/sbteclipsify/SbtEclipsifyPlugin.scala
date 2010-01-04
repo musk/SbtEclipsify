@@ -11,7 +11,8 @@ trait SbtEclipsifyPlugin extends Project {
     }
   }
 
-  def projectDescription: Property[String]
+  lazy val projectDescription = propertyOptional[String](projectName.value + " " + projectVersion.value)
+  lazy val sbtDependency = propertyOptional[Boolean](false)
 
   def writeClasspathFile(log: Logger): Option[String] = ClasspathFile(this, log).writeFile    
   def writeProjectFile(log: Logger): Option[String] = ProjectFile(this, log).writeFile

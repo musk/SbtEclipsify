@@ -74,10 +74,10 @@ object ClasspathEntry {
 }
 
 class ClasspathFile(project: Project, log: Logger) {
+  import ClasspathConversions._
   lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
   
   def writeFile: Option[String] = {
-    import ClasspathConversions._
     
     def createOrReplaceWith(content: String): Option[String]= {
       
@@ -106,19 +106,17 @@ class ClasspathFile(project: Project, log: Logger) {
     val basicScalaPaths = project.asInstanceOf[BasicScalaPaths]
     val dependencies = basicScalaPaths.dependencyPath
     val managedDependencies = basicScalaPaths.managedDependencyPath
-    val paths = project.asInstanceOf[MavenStyleScalaPaths]    
 
     val scalaContainer = "ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"
     val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
 
-    var entries = ClasspathEntry(Source, paths.mainScalaSourcePath, None, FilterChain(IncludeFilter("**/*.scala"))) ::
-		  ClasspathEntry(Source, paths.testScalaSourcePath, None, FilterChain(IncludeFilter("**/*.scala"))) ::
-		  ClasspathEntry(Source, paths.mainJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) ::
-		  ClasspathEntry(Source, paths.testJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: 
-		  ClasspathEntry(Container, scalaContainer) ::
+    var entries: List[ClasspathEntry] = ClasspathEntry(Container, scalaContainer) ::
 		  ClasspathEntry(Container, javaContainer) ::
 		  Nil
-    entries = entries ++ getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++ List(ClasspathEntry(Output, paths.outputPath))
+    
+    entries = getJavaPaths ++ getScalaPaths ++ entries ++ getSbtJarForSbtProject ++ 
+	      getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++ 
+	      List(ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].outputPath))
     
     lazy val classpathContent = 
       """<?xml version="1.0" encoding="UTF-8" ?>""" +
@@ -126,6 +124,28 @@ class ClasspathFile(project: Project, log: Logger) {
       ("" /: entries)(_ + _.mkString("\n")) +
       "\n</classpath>"
     createOrReplaceWith(classpathContent)
+  }
+
+  def getScalaPaths: List[ClasspathEntry] = {
+    val paths = project.asInstanceOf[MavenStyleScalaPaths]
+    var entries = List[ClasspathEntry]()
+    entries = if(paths.mainScalaSourcePath.exists) { ClasspathEntry(Source, paths.mainScalaSourcePath, None, FilterChain(IncludeFilter("**/*.scala"))) :: entries } else entries
+    if(paths.testScalaSourcePath.exists) { ClasspathEntry(Source, paths.testScalaSourcePath, None, FilterChain(IncludeFilter("**/*.scala"))) :: entries } else entries
+  }
+
+  def getJavaPaths: List[ClasspathEntry] = {
+    val paths = project.asInstanceOf[MavenStyleScalaPaths]
+    var entries = List[ClasspathEntry]()
+    entries = if (paths.testJavaSourcePath.exists) { ClasspathEntry(Source, paths.testJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries } else entries
+    if (paths.mainJavaSourcePath.exists) { ClasspathEntry(Source, paths.mainJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries } else entries
+  }
+
+  def getSbtJarForSbtProject: List[ClasspathEntry] = {
+    val scalaVersion = project.scalaVersion.get.get
+    val sbtVersion = project.sbtVersion.get.get
+    // TODO how to handle cross builds?
+    val sbtLibPath = project.info.projectPath / "project" / "boot" / ("scala-" + scalaVersion) / ("sbt-" + sbtVersion) / ("sbt_" + scalaVersion + "-" + sbtVersion + ".jar")
+    if(project.asInstanceOf[SbtEclipsifyPlugin].sbtDependency.value) List(ClasspathEntry(Library, sbtLibPath)) else Nil
   }
 }
 
