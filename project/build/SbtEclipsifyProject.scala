@@ -5,5 +5,4 @@ class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) w
   override def compileOptions =  super.compileOptions ++ (Unchecked :: Deprecation :: Nil) 
 
   lazy val scalaTest = "org.scalatest" % "scalatest" % "1.0"
-//  lazy val projectDescription = property[String]
 }

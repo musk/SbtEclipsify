@@ -3,7 +3,7 @@ package de.element34.sbteclipsify
 import sbt._
 
 trait SbtEclipsifyPlugin extends Project {
-  lazy val eclipsify = task {
+  lazy val eclipse = task {
     log.info("Creating eclipse project...")
     writeProjectFile(log) match {
       case None => writeClasspathFile(log)
