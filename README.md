@@ -1,7 +1,10 @@
 # SbtEclipsify
 
 Plugin for sbt (http://code.google.com/p/simple-build-tool/) for creating .classpath and .project files for the Ecipse IDE (http://www.eclipse.org). 
-It is currently in Beta state and is not feature complete
+It is currently in Beta state and is not feature complete.
+
+## License
+Just like sbt this software is distributed under the BSD License (http://www.opensource.org/licenses/bsd-license.php).
 
 ## Getting the Plugin
 In order to use the plugin you either have to download the provided jar or you need to build it yourself (sorry no public release to a repo yet :( )
