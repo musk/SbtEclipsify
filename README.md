@@ -58,10 +58,16 @@ After reloading the project you should have a new action named "eclipse" which w
 
 Now all you need to do is import the Project into your Eclipse workspace as an existing Project and everything should work.
 
+## Known Issues
+None as of yet but then again this is still very beta and not too well tested and there are still a lot of missing features
+
 ## FUTURE
 * Make the project buildable from a simple download
 * Better documentation (as always :) )
 * Add ability to fine tune generation
 * Add ability to include directories besides those in test and main
-* Rename it to eclipse *done*
+* Add generation of subprojects like with eclipse:eclipse from maven
+* Improve the test coverage (still need to figure out how to mock the sbt parts) 
+* Add sources when available to classepathentries
+
 

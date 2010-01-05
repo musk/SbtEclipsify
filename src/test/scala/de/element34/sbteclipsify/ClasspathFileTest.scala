@@ -8,12 +8,29 @@ import de.element34.sbteclipsify._
 
 class ClasspathFileTest extends FlatSpec with ShouldMatchers {
 
+//   "A ClasspathFile" should "produce a valid xml file with classpathentries" {
+//     val expected = """<?xml version="1.0" encoding="UTF-8" ?>""" +
+//     <classpath>
+//       <classpathentry kind="src" path="src1/" including="**/*.scala" />
+//       <classpathentry kind="lib" path="lib/" />
+//       <classpathentry kind="cont" path="container" />
+//     </classpath>.mkString
+
+//     /*
+//      * TODO mock projectinfo with the above values
+//      *      ProjectInfo is in the filed info in Project which is passed to ClasspathFile
+//      *      Project needs a mixin of type MavenStylePaths
+//      *      val project: Project = new Project(???) with MavenStylePaths
+//      *      ClasspathFile(project, new Logger()) 
+//      */
+//   }
+
   "A ClasspathEntry" should "produce the xml for a classpathentry in the elcipse .classpath file" in {
-  
+
     val entry = ClasspathEntry(Variable, "src/main/scala")
-    val expected = """<classpathentry kind="var" path="src/main/scala" />""" 
+    val expected = """<classpathentry kind="var" path="src/main/scala" />"""
     entry.mkString should be (expected)
-    
+
   }
 
   it should "produce srcpath entries" in {
@@ -35,7 +52,7 @@ class ClasspathFileTest extends FlatSpec with ShouldMatchers {
     exEntry.mkString should be (exExpected)
     incExEntry.mkString should be (incExExpected)
   }
-  
+
   it should "produce container entries" in {
     val conEntry = ClasspathEntry(Container, "target/")
     val expected = """<classpathentry kind="con" path="target/" />"""

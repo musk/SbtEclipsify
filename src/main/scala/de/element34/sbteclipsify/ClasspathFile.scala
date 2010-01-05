@@ -110,13 +110,11 @@ class ClasspathFile(project: Project, log: Logger) {
     val scalaContainer = "ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"
     val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
 
-    var entries: List[ClasspathEntry] = ClasspathEntry(Container, scalaContainer) ::
-		  ClasspathEntry(Container, javaContainer) ::
-		  Nil
-    
-    entries = getJavaPaths ++ getScalaPaths ++ entries ++ getSbtJarForSbtProject ++ 
+    val entries = getJavaPaths ++ getScalaPaths ++ getSbtJarForSbtProject ++ 
 	      getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++ 
-	      List(ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].outputPath))
+	      List(ClasspathEntry(Container, scalaContainer), 
+		   ClasspathEntry(Container, javaContainer), 
+		   ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].outputPath))
     
     lazy val classpathContent = 
       """<?xml version="1.0" encoding="UTF-8" ?>""" +
@@ -136,8 +134,13 @@ class ClasspathFile(project: Project, log: Logger) {
   def getJavaPaths: List[ClasspathEntry] = {
     val paths = project.asInstanceOf[MavenStyleScalaPaths]
     var entries = List[ClasspathEntry]()
-    entries = if (paths.testJavaSourcePath.exists) { ClasspathEntry(Source, paths.testJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries } else entries
-    if (paths.mainJavaSourcePath.exists) { ClasspathEntry(Source, paths.mainJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries } else entries
+    entries = if (paths.testJavaSourcePath.exists) {
+      ClasspathEntry(Source, paths.testJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries 
+    } else entries
+
+    if (paths.mainJavaSourcePath.exists) { 
+      ClasspathEntry(Source, paths.mainJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries 
+    } else entries
   }
 
   def getSbtJarForSbtProject: List[ClasspathEntry] = {
