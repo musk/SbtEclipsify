@@ -1,2 +1,10 @@
+SbtEclipsify
+Copyright 2009, 2010 Stefan Langer
+
 Portions based on code from Simple Build Tool (sbt)
-Copyright 2008, 2009 Steven Blundy, Mark Harrah, David MacIver, Mikko Peltonen
+Copyright 2008-2010 Steven Blundy, Mark Harrah, David MacIver, Mikko Peltonen
+Licensed under BSD License (LICENSE)
+
+Portions based on code from ScalaTest
+Copyright 2001-2010 Artima, Inc.
+Licensed under Apache License, Version 2.0 (licenses/LICENSE_Apache) 
