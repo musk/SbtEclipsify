@@ -23,9 +23,12 @@ From now on you can simply use `"de.element34" % "sbteclipsify" % "<buildversion
 
 ## Supported properties
 The following properties can be added to the build.properties of your project in order to control the output of the plugin
-`sbt.dependency`(default: false) => if set to true puts the sbt jar on the classpath of the project this is needed if you are creating actions or plugins for sbt
+`sbt.dependency`(default: false) => if set to true puts the sbt jar on the classpath of the project this is needed if you are creating actions or plugins for sbt 
+
 `project.description`(default: Projectname + Projectversion) => Set this to the text used to describe your project. this is directly transfered to the .projectfile's project description tag.
+
 `include.project`(default: false) => if set to true the path to the project definition is added as a source folder to the classpath. 
+
 `include.plugin`(default: true) => if set to true the path to the plugin defintion is added as a source folder to the classpath.
 
 ## Using the Plugin in your own project
