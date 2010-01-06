@@ -1,4 +1,4 @@
-package de.element34.eclipsify
+package de.element34.sbteclipsify
 
 import org.scalatest._
 import org.scalatest.matchers._
@@ -21,7 +21,7 @@ class ClasspathFileTest extends FlatSpec with ShouldMatchers {
 //      *      ProjectInfo is in the filed info in Project which is passed to ClasspathFile
 //      *      Project needs a mixin of type MavenStylePaths
 //      *      val project: Project = new Project(???) with MavenStylePaths
-//      *      ClasspathFile(project, new Logger()) 
+//      *      ClasspathFile(project, new Logger())
 //      */
 //   }
 

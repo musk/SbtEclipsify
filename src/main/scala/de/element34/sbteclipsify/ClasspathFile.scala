@@ -36,7 +36,7 @@ object EmptyFilter extends FilterChain(None, None)
 
 
 abstract class Kind(val name: String)
-case object Variable extends Kind("var") 
+case object Variable extends Kind("var")
 case object Container extends Kind("con")
 case object Output extends Kind("output")
 case object Source extends Kind("src")
@@ -50,16 +50,16 @@ case class ClasspathEntry(kind: Kind, path: String, srcpath: Option[String], fil
 
   def mkString: String = mkString("")
   def mkString(sep: String): String = {
-    sep + 
-    "<classpathentry kind=\"" + kind.name + "\"" + 
-    " path=\"" + path + "\"" + 
-    writeSrcPath(srcpath) + 
+    sep +
+    "<classpathentry kind=\"" + kind.name + "\"" +
+    " path=\"" + path + "\"" +
+    writeSrcPath(srcpath) +
     filter.mkString +
     " />"
-  }  
+  }
 
   def writeSrcPath(srcpath: Option[String]): String = {
-    srcpath match { 
+    srcpath match {
       case Some(text) => " sourcepath=\"" +  text + "\""
       case None => ""
     }
@@ -76,11 +76,11 @@ object ClasspathEntry {
 class ClasspathFile(project: Project, log: Logger) {
   import ClasspathConversions._
   lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
-  
+
   def writeFile: Option[String] = {
-    
+
     def createOrReplaceWith(content: String): Option[String]= {
-      
+
       FileUtilities.touch(classpathFile, log) match {
 	case Some(error) =>
 	  Some("Unable to write classpath file " + classpathFile + ": " + error)
@@ -110,13 +110,13 @@ class ClasspathFile(project: Project, log: Logger) {
     val scalaContainer = "ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"
     val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
 
-    val entries = getJavaPaths ++ getScalaPaths ++ getSbtJarForSbtProject ++ 
-	      getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++ 
-	      List(ClasspathEntry(Container, scalaContainer), 
-		   ClasspathEntry(Container, javaContainer), 
-		   ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].outputPath))
-    
-    lazy val classpathContent = 
+    val entries = getJavaPaths ++ getScalaPaths ++ getSbtJarForSbtProject ++
+	      getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
+	      List(ClasspathEntry(Container, scalaContainer),
+		   ClasspathEntry(Container, javaContainer),
+		   ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath))
+
+    lazy val classpathContent =
       """<?xml version="1.0" encoding="UTF-8" ?>""" +
       "\n<classpath>" +
       ("" /: entries)(_ + _.mkString("\n")) +
@@ -135,11 +135,11 @@ class ClasspathFile(project: Project, log: Logger) {
     val paths = project.asInstanceOf[MavenStyleScalaPaths]
     var entries = List[ClasspathEntry]()
     entries = if (paths.testJavaSourcePath.exists) {
-      ClasspathEntry(Source, paths.testJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries 
+      ClasspathEntry(Source, paths.testJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries
     } else entries
 
-    if (paths.mainJavaSourcePath.exists) { 
-      ClasspathEntry(Source, paths.mainJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries 
+    if (paths.mainJavaSourcePath.exists) {
+      ClasspathEntry(Source, paths.mainJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries
     } else entries
   }
 
