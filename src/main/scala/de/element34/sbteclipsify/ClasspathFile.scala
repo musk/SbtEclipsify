@@ -34,7 +34,6 @@ object FilterChain {
 
 object EmptyFilter extends FilterChain(None, None)
 
-
 abstract class Kind(val name: String)
 case object Variable extends Kind("var")
 case object Container extends Kind("con")
@@ -46,16 +45,24 @@ object ClasspathConversions {
   implicit def pathToString(path: Path): String = path.toString
 }
 
-case class ClasspathEntry(kind: Kind, path: String, srcpath: Option[String], filter: FilterChain) {
-
+case class ClasspathEntry(kind: Kind, path: String, srcpath: Option[String], filter: FilterChain, attributes: List[Tuple2[String, String]]) {
   def mkString: String = mkString("")
   def mkString(sep: String): String = {
     sep +
     "<classpathentry kind=\"" + kind.name + "\"" +
     " path=\"" + path + "\"" +
     writeSrcPath(srcpath) +
-    filter.mkString +
-    " />"
+    filter.mkString + (
+	    if(attributes.isEmpty)
+	    	" />"
+	    else {
+	    	def mkAttribute(item: Tuple2[String, String]) = {
+	    	  "<attribute name=\"" + item._1 + "\" value=\"" + item._2 + "\" />"
+	    	}
+	    	val attrstr = ("" /: attributes.map(mkAttribute))(_ + _)
+	    	">\n<attributes>\n"+  attrstr  + "\n</attributes>\n</classpathentry>"
+	    }
+    )
   }
 
   def writeSrcPath(srcpath: Option[String]): String = {
@@ -67,15 +74,19 @@ case class ClasspathEntry(kind: Kind, path: String, srcpath: Option[String], fil
 }
 
 object ClasspathEntry {
-  def apply(kind: Kind, path: String) = new ClasspathEntry(kind, path, None, EmptyFilter)
-  def apply(kind: Kind, path: String, srcpath: String) = new ClasspathEntry(kind, path, Some(srcpath), EmptyFilter)
-  def apply(kind: Kind, path: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, filter)
-  def apply(kind: Kind, path: String, srcpath: String, filter: FilterChain) = new ClasspathEntry(kind, path, Some(srcpath), filter)
+  def apply(kind: Kind, path: String) = new ClasspathEntry(kind, path, None, EmptyFilter, Nil)
+  def apply(kind: Kind, path: String, srcpath: String) = new ClasspathEntry(kind, path, Some(srcpath), EmptyFilter, Nil)
+  def apply(kind: Kind, path: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, filter, Nil)
+  def apply(kind: Kind, path: String, srcpath: String, filter: FilterChain) = new ClasspathEntry(kind, path, Some(srcpath), filter, Nil)
+  def apply(kind: Kind, path: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, EmptyFilter, attributes)
+  def apply(kind: Kind, path: String, srcpath: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcpath), EmptyFilter, attributes)
+  def apply(kind: Kind, path: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, filter, attributes)
+  def apply(kind: Kind, path: String, srcpath: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcpath), filter, attributes)
 }
 
 class ClasspathFile(project: Project, log: Logger) {
-  import ClasspathConversions._
-  lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
+	import ClasspathConversions._
+    lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
 
   def writeFile: Option[String] = {
 
@@ -93,11 +104,11 @@ class ClasspathFile(project: Project, log: Logger) {
       import Path._
       val files = path.asFile.listFiles
       val jars = files.filter(file => file.isFile && file.getName.endsWith(".jar")).map(file => {
-	val relativePath = Path.relativize(project.info.projectPath, file) match {
-	  case Some(rPath) => rPath
-	  case None => Path.fromFile(file)
-	}
-	ClasspathEntry(Library, relativePath)
+		  val relativePath = Path.relativize(project.info.projectPath, file) match {
+			  case Some(rPath) => rPath
+			  case None => Path.fromFile(file)
+		  }
+		  ClasspathEntry(Library, relativePath)
       }).toList
       val subDirs = files.filter(file => file.isDirectory && file.getName != ".." && file.getName != ".").flatMap(file => getDependencyEntries(Path.fromFile(file))).toList
       jars ++ subDirs
@@ -110,7 +121,7 @@ class ClasspathFile(project: Project, log: Logger) {
     val scalaContainer = "ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"
     val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
 
-    val entries = getJavaPaths ++ getScalaPaths ++ getSbtJarForSbtProject ++
+    val entries = getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
 	      getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
 	      List(ClasspathEntry(Container, scalaContainer),
 		   ClasspathEntry(Container, javaContainer),
@@ -124,22 +135,37 @@ class ClasspathFile(project: Project, log: Logger) {
     createOrReplaceWith(classpathContent)
   }
 
+  def getProjectPath: List[ClasspathEntry] = {
+    val plugin = project.asInstanceOf[SbtEclipsifyPlugin]
+    var entries = List[ClasspathEntry]()
+    entries = if(plugin.includeProject.value && project.info.builderProjectPath.exists) {
+    	ClasspathEntry(Source, project.info.builderProjectPath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
+    } else entries
+    if(plugin.includePlugin.value && project.info.pluginsPath.exists) {
+      ClasspathEntry(Source, project.info.pluginsPath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
+    } else entries
+  }
+
   def getScalaPaths: List[ClasspathEntry] = {
     val paths = project.asInstanceOf[MavenStyleScalaPaths]
     var entries = List[ClasspathEntry]()
-    entries = if(paths.mainScalaSourcePath.exists) { ClasspathEntry(Source, paths.mainScalaSourcePath, None, FilterChain(IncludeFilter("**/*.scala"))) :: entries } else entries
-    if(paths.testScalaSourcePath.exists) { ClasspathEntry(Source, paths.testScalaSourcePath, None, FilterChain(IncludeFilter("**/*.scala"))) :: entries } else entries
+    entries = if(paths.mainScalaSourcePath.exists) {
+    	ClasspathEntry(Source, paths.mainScalaSourcePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
+    } else entries
+    if(paths.testScalaSourcePath.exists) {
+    	ClasspathEntry(Source, paths.testScalaSourcePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
+    } else entries
   }
 
   def getJavaPaths: List[ClasspathEntry] = {
     val paths = project.asInstanceOf[MavenStyleScalaPaths]
     var entries = List[ClasspathEntry]()
     entries = if (paths.testJavaSourcePath.exists) {
-      ClasspathEntry(Source, paths.testJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries
+      ClasspathEntry(Source, paths.testJavaSourcePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
     } else entries
 
     if (paths.mainJavaSourcePath.exists) {
-      ClasspathEntry(Source, paths.mainJavaSourcePath, None, FilterChain(IncludeFilter("**/*.java"))) :: entries
+      ClasspathEntry(Source, paths.mainJavaSourcePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
     } else entries
   }
 

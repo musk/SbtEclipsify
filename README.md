@@ -17,14 +17,16 @@ If you have scala sources in your project you need to have the Scala Eclipse plu
 This plugin is currently only compiled against Scala 2.7.7 and there is no crossbuild in place as of yet.
 
 ### Building
-SbtEclipsify uses oh wonder sbt as the build tool. In order to get it to build you first need an older version of the plugin since SbtEclipsify uses SbtEclipsify. You can obtain it from the dist folder on git. 
-After downloading it from git you need to open projects/plugins/SbtEclipsePlugins.scala and edit the line lazy val eclipsify to use the locally downloaded version of the sbteclipse.jar. Once this is done start sbt and do a publish-local. This should compile all sources, run all tests and install the most recent version of the plugin to your local repo. 
+SbtEclipsify uses oh wonder sbt as the build tool. 
+After downloading it from git start sbt and do a publish-local. This should compile all sources, run all tests and install the most recent version of the plugin to your local repo. 
 From now on you can simply use `"de.element34" % "sbteclipsify" % "<buildversion>"` to get the plugin for your own projects.
 
 ## Supported properties
 The following properties can be added to the build.properties of your project in order to control the output of the plugin
-sbt.dependency=boolean (default: false) => if set to true puts the sbt jar on the classpath of the project this is needed if you are creating actions or plugins for sbt
-project.description= (default: Projectname Projectversin) => Set this to the text used to describe your project. this is directly transfered to the .projectfile's project description tag.
+`sbt.dependency`(default: false) => if set to true puts the sbt jar on the classpath of the project this is needed if you are creating actions or plugins for sbt
+`project.description`(default: Projectname + Projectversion) => Set this to the text used to describe your project. this is directly transfered to the .projectfile's project description tag.
+`include.project`(default: false) => if set to true the path to the project definition is added as a source folder to the classpath. 
+`include.plugin`(default: true) => if set to true the path to the plugin defintion is added as a source folder to the classpath.
 
 ## Using the Plugin in your own project
 You need to create a plugin definition in your sbt project. 
@@ -34,7 +36,7 @@ Example:
 If your project is located at MySbtProject/
 
 then create the plugins directory
-mkdir MySbtProject/project/plugins
+`mkdir MySbtProject/project/plugins`
 
 next create a file name MySbtProjectPlugins.scala and add the following text to it:
 
