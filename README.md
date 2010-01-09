@@ -64,7 +64,8 @@ After reloading the project you should have a new action named "eclipse" which w
 Now all you need to do is import the Project into your Eclipse workspace as an existing Project and everything should work.
 
 ## Known Issues
-None as of yet but then again this is still very beta and not too well tested and there are still a lot of missing features
+The plugin only supports one outputpath currently. Test cannot be compiled to a different path. 
+Crossbuilds are not supported.			 
 
 ## FUTURE
 * Make the project buildable from a simple download
