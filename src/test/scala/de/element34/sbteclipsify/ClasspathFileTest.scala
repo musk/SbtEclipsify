@@ -1,8 +1,7 @@
 package de.element34.sbteclipsify
 
 import org.scalatest._
-import org.scalatest.matchers._
-import org.scalatest.matchers.ShouldMatchers._
+import org.scalatest.matchers.ShouldMatchers
 
 import de.element34.sbteclipsify._
 

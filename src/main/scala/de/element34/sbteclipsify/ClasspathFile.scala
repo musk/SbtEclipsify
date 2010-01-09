@@ -174,7 +174,9 @@ class ClasspathFile(project: Project, log: Logger) {
     val sbtVersion = project.sbtVersion.get.get
     // TODO how to handle cross builds?
     val sbtLibPath = project.info.projectPath / "project" / "boot" / ("scala-" + scalaVersion) / ("sbt-" + sbtVersion) / ("sbt_" + scalaVersion + "-" + sbtVersion + ".jar")
-    if(project.asInstanceOf[SbtEclipsifyPlugin].sbtDependency.value) List(ClasspathEntry(Library, sbtLibPath)) else Nil
+    val plugin = project.asInstanceOf[SbtEclipsifyPlugin]
+    if(plugin.sbtDependency.value || plugin.includeProject.value || plugin.includePlugin.value)
+    	List(ClasspathEntry(Library, sbtLibPath)) else Nil
   }
 }
 
