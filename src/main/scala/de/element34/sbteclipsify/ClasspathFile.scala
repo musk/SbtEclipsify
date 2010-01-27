@@ -266,7 +266,7 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>List[ClasspathEntry]</code> for sbt jar
      */
 	def getSbtJarForSbtProject: List[ClasspathEntry] = {
-	    val scalaVersion = project.scalaVersion.get.get
+	    val scalaVersion = project.buildScalaVersion
 	    val sbtVersion = project.sbtVersion.get.get
 	    // TODO how to handle cross builds?
 	    val sbtLibPath = project.info.projectPath / "project" / "boot" / ("scala-" + scalaVersion) / ("sbt-" + sbtVersion) / ("sbt_" + scalaVersion + "-" + sbtVersion + ".jar")
