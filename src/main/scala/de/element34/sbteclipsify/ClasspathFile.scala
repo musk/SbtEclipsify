@@ -187,15 +187,17 @@ class ClasspathFile(project: Project, log: Logger) {
     	def getDependencyEntries(path: Path): List[ClasspathEntry] = {
     		import Path._
     		val files = path.asFile.listFiles
-    		val jars = files.filter(file => file.isFile && file.getName.endsWith(".jar")).map(file => {
-    			val relativePath = Path.relativize(project.info.projectPath, file) match {
-			  		case Some(rPath) => rPath
-			  		case None => Path.fromFile(file)
-    			}
-    			ClasspathEntry(Library, relativePath)
-    		}).toList
-    		val subDirs = files.filter(file => file.isDirectory && file.getName != ".." && file.getName != ".").flatMap(file => getDependencyEntries(Path.fromFile(file))).toList
-    		jars ++ subDirs
+    		if(files != null) {
+	    		val jars = files.filter(file => file.isFile && file.getName.endsWith(".jar")).map(file => {
+	    			val relativePath = Path.relativize(project.info.projectPath, file) match {
+				  		case Some(rPath) => rPath
+				  		case None => Path.fromFile(file)
+	    			}
+	    			ClasspathEntry(Library, relativePath)
+	    		}).toList
+	    		val subDirs = files.filter(file => file.isDirectory && file.getName != ".." && file.getName != ".").flatMap(file => getDependencyEntries(Path.fromFile(file))).toList
+	    		jars ++ subDirs
+    		} else Nil
     	}
 
     	val basicScalaPaths = project.asInstanceOf[BasicScalaPaths]
