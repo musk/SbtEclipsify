@@ -52,6 +52,28 @@ class ClasspathFileTest extends FlatSpec with ShouldMatchers {
 //      */
 //   }
 
+  "A ClasspathFile" must "report all dependecies as a classpathentry list" in {
+//	  import sbt._
+//	  val resourcePath = Path(".") / "src" / "test" / "resources" / "test_managed"
+//	  val cf = ClasspathFile(null, null)
+//	  val entries = cf.getDependencyEntries(resourcePath)
+//	  entries should be (ClasspathEntry(Library, "src/test/resources/test.jar") :: ClasspathEntry(Library, "src/test/resources/test/test2.jar") :: Nil)
+  }
+
+  it must "report an empty list if no dependencies exist" in {
+//	  import sbt._
+//	  val resourcePath = Path(".") / "src" / "test" / "resources" / "nonexistingdir"
+//	  val cf = ClasspathFile(null, null)
+//	  val entries = cf.getDependencyEntries(resourcePath)
+//	  entries should be (List[ClasspathEntry]())
+//
+//	  val resourcePath2 = Path(".") / "src" / "test" / "resources" / "empty"
+//	  val cf2 = ClasspathFile(null, null)
+//	  val entries2 = cf2.getDependencyEntries(resourcePath2)
+//	  entries2 should be (List[ClasspathEntry]())
+
+    }
+
   "A ClasspathEntry" should "produce the xml for a classpathentry in the elcipse .classpath file" in {
 
     val entry = ClasspathEntry(Variable, "src/main/scala")
