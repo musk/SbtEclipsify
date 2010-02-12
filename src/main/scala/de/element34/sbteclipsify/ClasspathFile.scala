@@ -168,38 +168,6 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>Some(error)</code>, where error designates the error message to display, when an error occures else returns <code>None</code>
      */
     def writeFile: Option[String] = {
-    	/**
-    	 * replaces the current content of the .classpath file
-    	 * @return <code>Some(error)</code> when error occures else returns <code>None</code>
-         */
-    	def createOrReplaceWith(content: String): Option[String]= {
-    		FileUtilities.touch(classpathFile, log) match {
-    			case Some(error) =>
-    				Some("Unable to write classpath file " + classpathFile + ": " + error)
-    			case None =>
-    				FileUtilities.write(classpathFile, classpathContent.toString, forName("UTF-8"), log)
-    		}
-    	}
-
-        /**
-         * @return <code>List[ClasspathEntry]</code> containing entries for each jar contained in path.
-         */
-    	def getDependencyEntries(path: Path): List[ClasspathEntry] = {
-    		import Path._
-    		val files = path.asFile.listFiles
-    		if(files != null) {
-	    		val jars = files.filter(file => file.isFile && file.getName.endsWith(".jar")).map(file => {
-	    			val relativePath = Path.relativize(project.info.projectPath, file) match {
-				  		case Some(rPath) => rPath
-				  		case None => Path.fromFile(file)
-	    			}
-	    			ClasspathEntry(Library, relativePath)
-	    		}).toList
-	    		val subDirs = files.filter(file => file.isDirectory && file.getName != ".." && file.getName != ".").flatMap(file => getDependencyEntries(Path.fromFile(file))).toList
-	    		jars ++ subDirs
-    		} else Nil
-    	}
-
     	val basicScalaPaths = project.asInstanceOf[BasicScalaPaths]
     	val dependencies = basicScalaPaths.dependencyPath
     	val managedDependencies = basicScalaPaths.managedDependencyPath
@@ -220,7 +188,31 @@ class ClasspathFile(project: Project, log: Logger) {
 	    createOrReplaceWith(classpathContent)
   	}
 
-    /**
+	/**
+	 * replaces the current content of the .classpath file
+	 * @return <code>Some(error)</code> when error occurs else returns <code>None</code>
+     */
+	def createOrReplaceWith(content: String): Option[String]= {
+		FileUtilities.touch(classpathFile, log) match {
+			case Some(error) =>
+				Some("Unable to write classpath file " + classpathFile + ": " + error)
+			case None =>
+				FileUtilities.write(classpathFile, content, forName("UTF-8"), log)
+		}
+	}
+
+	/**
+     * @return <code>List[ClasspathEntry]</code> containing entries for each jar contained in path.
+     */
+	def getDependencyEntries(path: Path): List[ClasspathEntry] = {
+		import Path._
+
+		val finder: PathFinder = path ** GlobFilter("*.jar")
+		val jarPaths: List[Path] = finder.get.flatMap(Path.relativize(project.info.projectPath, _)).toList
+		jarPaths.map(path => ClasspathEntry(Library, path.relativePath))
+	}
+
+	/**
      * @return <code>List[ClasspathEntry]</code> with entries for the project build directory and the project plugin directory
      */
   	def getProjectPath: List[ClasspathEntry] = {
@@ -283,6 +275,12 @@ class ClasspathFile(project: Project, log: Logger) {
  * Factory to for creating ClasspathFile instances
  */
 object ClasspathFile {
-  def apply(project: Project, log: Logger) = new ClasspathFile(project, log)
+
+	def apply(project: Project, log: Logger) = new ClasspathFile(project, log)
+
+//	def getDependencyEntries(path: Path, basePath: Path): List[ClasspathEntry] = {
+//		val finder: PathFinder = path ** GlobFilter("*.jar")
+//		finder.get.flatMap(Path.relativize(basePath, _)).toList.map(path => ClasspathEntry(Library, path.relativePath))
+//	}
 }
 

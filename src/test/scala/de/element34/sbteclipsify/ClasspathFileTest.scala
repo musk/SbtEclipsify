@@ -28,51 +28,14 @@
  */
 package de.element34.sbteclipsify
 
+import sbt._
+
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 
 import de.element34.sbteclipsify._
 
 class ClasspathFileTest extends FlatSpec with ShouldMatchers {
-
-//   "A ClasspathFile" should "produce a valid xml file with classpathentries" {
-//     val expected = """<?xml version="1.0" encoding="UTF-8" ?>""" +
-//     <classpath>
-//       <classpathentry kind="src" path="src1/" including="**/*.scala" />
-//       <classpathentry kind="lib" path="lib/" />
-//       <classpathentry kind="cont" path="container" />
-//     </classpath>.mkString
-
-//     /*
-//      * TODO mock projectinfo with the above values
-//      *      ProjectInfo is in the filed info in Project which is passed to ClasspathFile
-//      *      Project needs a mixin of type MavenStylePaths
-//      *      val project: Project = new Project(???) with MavenStylePaths
-//      *      ClasspathFile(project, new Logger())
-//      */
-//   }
-
-  "A ClasspathFile" must "report all dependecies as a classpathentry list" in {
-//	  import sbt._
-//	  val resourcePath = Path(".") / "src" / "test" / "resources" / "test_managed"
-//	  val cf = ClasspathFile(null, null)
-//	  val entries = cf.getDependencyEntries(resourcePath)
-//	  entries should be (ClasspathEntry(Library, "src/test/resources/test.jar") :: ClasspathEntry(Library, "src/test/resources/test/test2.jar") :: Nil)
-  }
-
-  it must "report an empty list if no dependencies exist" in {
-//	  import sbt._
-//	  val resourcePath = Path(".") / "src" / "test" / "resources" / "nonexistingdir"
-//	  val cf = ClasspathFile(null, null)
-//	  val entries = cf.getDependencyEntries(resourcePath)
-//	  entries should be (List[ClasspathEntry]())
-//
-//	  val resourcePath2 = Path(".") / "src" / "test" / "resources" / "empty"
-//	  val cf2 = ClasspathFile(null, null)
-//	  val entries2 = cf2.getDependencyEntries(resourcePath2)
-//	  entries2 should be (List[ClasspathEntry]())
-
-    }
 
   "A ClasspathEntry" should "produce the xml for a classpathentry in the elcipse .classpath file" in {
 
