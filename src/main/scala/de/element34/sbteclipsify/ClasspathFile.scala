@@ -145,6 +145,7 @@ case class ClasspathEntry(kind: Kind, path: String, srcpath: Option[String], fil
  */
 object ClasspathEntry {
   def apply(kind: Kind, path: String) = new ClasspathEntry(kind, path, None, EmptyFilter, Nil)
+  def apply(kind: Kind, path: String, srcpath: Option[String]) = new ClasspathEntry(kind, path, srcpath, EmptyFilter, Nil)
   def apply(kind: Kind, path: String, srcpath: String) = new ClasspathEntry(kind, path, Some(srcpath), EmptyFilter, Nil)
   def apply(kind: Kind, path: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, filter, Nil)
   def apply(kind: Kind, path: String, srcpath: String, filter: FilterChain) = new ClasspathEntry(kind, path, Some(srcpath), filter, Nil)
@@ -204,12 +205,27 @@ class ClasspathFile(project: Project, log: Logger) {
 	/**
      * @return <code>List[ClasspathEntry]</code> containing entries for each jar contained in path.
      */
-	def getDependencyEntries(path: Path): List[ClasspathEntry] = {
+	def getDependencyEntries(basePath: Path): List[ClasspathEntry] = {
 		import Path._
 
-		val finder: PathFinder = path ** GlobFilter("*.jar")
+		val finder: PathFinder = basePath ** GlobFilter("*.jar") --- basePath ** GlobFilter("*-sources.jar")
 		val jarPaths: List[Path] = finder.get.flatMap(Path.relativize(project.info.projectPath, _)).toList
-		jarPaths.map(path => ClasspathEntry(Library, path.relativePath))
+		jarPaths.map(path => ClasspathEntry(Library, path.relativePath, findSource(basePath, path)))
+	}
+
+	def findSource(basePath: Path, jar: Path): Option[String] = {
+		import sbt.Project._
+		val JarEx = """.*/([^/]*)\.jar""".r
+		jar.toString match {
+			case JarEx(name) => {
+				val jarName = name + "-sources.jar"
+				log.info(jarName)
+				val finder: PathFinder = basePath ** new ExactFilter(jarName)
+				val seq = finder.get.toSeq
+				seq.firstOption.map(_.toString)
+			}
+			case _ => None
+		}
 	}
 
 	/**
@@ -217,10 +233,10 @@ class ClasspathFile(project: Project, log: Logger) {
      */
   	def getProjectPath: List[ClasspathEntry] = {
 	    val plugin = project.asInstanceOf[SbtEclipsifyPlugin]
-	    var entries = List[ClasspathEntry]()
-	    entries = if(plugin.includeProject.value && project.info.builderProjectPath.exists) {
-	    	ClasspathEntry(Source, project.info.builderProjectPath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
-	    } else entries
+	    val entries: List[ClasspathEntry] = if(plugin.includeProject.value && project.info.builderProjectPath.exists) {
+	    	ClasspathEntry(Source, project.info.builderProjectPath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
+	    } else Nil
+
 	    if(plugin.includePlugin.value && project.info.pluginsPath.exists) {
 	    	ClasspathEntry(Source, project.info.pluginsPath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
 	    } else entries
