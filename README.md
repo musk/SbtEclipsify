@@ -1,7 +1,8 @@
 # SbtEclipsify
 
-Plugin for sbt (http://code.google.com/p/simple-build-tool/) for creating .classpath and .project files for the Ecipse IDE (http://www.eclipse.org).
+Plugin for sbt (http://code.google.com/p/simple-build-tool/) 0.7.x for creating .classpath and .project files for the Ecipse IDE (http://www.eclipse.org).
 It is currently in Beta state and is not feature complete.
+If you need to use this plugin with sbt version prior to 0.5.6 then you need to use version 0.4.1
 
 ## License
 Just like sbt this software is distributed under the BSD License (http://www.opensource.org/licenses/bsd-license.php).
@@ -17,7 +18,6 @@ You can find ready made jars in the dist folder on git. Download it and use sbt 
 
 ## Requirements
 If you have scala sources in your project you need to have the Scala Eclipse plugin installed or else you will not be able to work with the generated project.
-This plugin is currently only compiled against Scala 2.7.7 and there is no crossbuild in place as of yet.
 
 ### Building
 SbtEclipsify uses oh wonder sbt as the build tool.
@@ -30,11 +30,11 @@ The following properties can be added to the build.properties of your project in
 
 `project.description`(default: Projectname + Projectversion) => Set this to the text used to describe your project. this is directly transfered to the .projectfile's project description tag.
 
-`include.project`(default: false) => if set to true the path to the project definition is added as a source folder to the classpath.
+`include.project`(default: false) => if set to true the path to the project definition is added as a source folder to the classpath. This automatically puts the sbt jar on the classpath.
 
-`include.plugin`(default: true) => if set to true the path to the plugin defintion is added as a source folder to the classpath.
+`include.plugin`(default: true) => if set to true the path to the plugin defintion is added as a source folder to the classpath. This automatically puts the sbt jar on the classpath.
 
-## Using the Plugin in your own project
+## Using the Plugin in your own project 
 You need to create a plugin definition in your sbt project.
 The plugin definition can be any Scala class that extends PluginDefinition and is located in the plugins directory in the projects subfolder of your sbt project.
 
@@ -49,11 +49,11 @@ next create a file name MySbtProjectPlugins.scala and add the following text to 
      import sbt._
 
      class MySbtProjectPlugins(info: ProjectInfo) extends PluginDefinition(info) {
-      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.2.0"
+      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.5.0"
      }
 
 This will enable your project to get the plugin in order to use it you need to add it to your project defintion.
-Open your project definition file, most likley "MySbtProject.scala" in "project/build/" folder, and add the SbtEclipsifyPlugin trait.
+Open your project definition file, something like "MySbtProject.scala" in "project/build/" folder, and add the SbtEclipsifyPlugin trait.
 
     import sbt._
     import de.element34.sbteclipsify._
@@ -68,7 +68,7 @@ Now all you need to do is import the Project into your Eclipse workspace as an e
 
 ## Known Issues
 The plugin only supports one outputpath currently. Test cannot be compiled to a different path.
-Crossbuilds are not supported.
+Crossbuilds are not supported officially but they might work.
 
 ## FUTURE
 * Better documentation (as always :) )
