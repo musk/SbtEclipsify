@@ -77,7 +77,7 @@ object FilterChain {
 }
 
 /**
- * Special type designating a empty <code>FilterChain</code>
+ * Special type designating an empty <code>FilterChain</code>
  */
 object EmptyFilter extends FilterChain(None, None)
 
@@ -231,10 +231,10 @@ class ClasspathFile(project: Project, log: Logger) {
      */
 	def getScalaPaths: List[ClasspathEntry] = {
 	    val paths = project.asInstanceOf[MavenStyleScalaPaths]
-	    var entries = List[ClasspathEntry]()
-	    entries = if(paths.mainScalaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.mainScalaSourcePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
-	    } else entries
+	    val entries: List[ClasspathEntry] = if(paths.mainScalaSourcePath.exists) {
+	    	ClasspathEntry(Source, paths.mainScalaSourcePath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
+	    } else Nil
+
 	    if(paths.testScalaSourcePath.exists) {
 	    	ClasspathEntry(Source, paths.testScalaSourcePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
 	    } else entries
@@ -245,10 +245,9 @@ class ClasspathFile(project: Project, log: Logger) {
      */
 	def getJavaPaths: List[ClasspathEntry] = {
 	    val paths = project.asInstanceOf[MavenStyleScalaPaths]
-	    var entries = List[ClasspathEntry]()
-	    entries = if (paths.testJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.testJavaSourcePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
-	    } else entries
+	    val entries: List[ClasspathEntry] = if (paths.testJavaSourcePath.exists) {
+	    	ClasspathEntry(Source, paths.testJavaSourcePath, FilterChain(IncludeFilter("**/*.java"))) :: Nil
+	    } else Nil
 
 	    if (paths.mainJavaSourcePath.exists) {
 	    	ClasspathEntry(Source, paths.mainJavaSourcePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
@@ -260,13 +259,16 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>List[ClasspathEntry]</code> for sbt jar
      */
 	def getSbtJarForSbtProject: List[ClasspathEntry] = {
-	    val scalaVersion = project.buildScalaVersion
-	    val sbtVersion = project.sbtVersion.get.get
-	    // TODO how to handle cross builds?
-	    val sbtLibPath = project.info.projectPath / "project" / "boot" / ("scala-" + scalaVersion) / ("sbt-" + sbtVersion) / ("sbt_" + scalaVersion + "-" + sbtVersion + ".jar")
 	    val plugin = project.asInstanceOf[SbtEclipsifyPlugin]
-	    if(plugin.sbtDependency.value || plugin.includeProject.value || plugin.includePlugin.value)
-	    	List(ClasspathEntry(Library, sbtLibPath))
+	    if(plugin.sbtDependency.value || plugin.includeProject.value || plugin.includePlugin.value) {
+			val scalaVersion = project.buildScalaVersion
+		    val sbtVersion = project.sbtVersion.get.get
+		    // TODO how to handle cross builds?
+		    val sbtJar = "sbt_" + scalaVersion + "-" + sbtVersion + ".jar"
+		    val foundPaths = project.info.projectPath / "project" / "boot" ** new ExactFilter(sbtJar) get
+		    val entries: List[ClasspathEntry] = foundPaths.map(ClasspathEntry(Library, _)).toList
+		    entries
+		}
 	    else Nil
 	}
 }
@@ -277,10 +279,5 @@ class ClasspathFile(project: Project, log: Logger) {
 object ClasspathFile {
 
 	def apply(project: Project, log: Logger) = new ClasspathFile(project, log)
-
-//	def getDependencyEntries(path: Path, basePath: Path): List[ClasspathEntry] = {
-//		val finder: PathFinder = path ** GlobFilter("*.jar")
-//		finder.get.flatMap(Path.relativize(basePath, _)).toList.map(path => ClasspathEntry(Library, path.relativePath))
-//	}
 }
 
