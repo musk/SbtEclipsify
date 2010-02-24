@@ -96,6 +96,7 @@ case object Library extends Kind("lib")
 object ClasspathConversions {
 	/** implicit conversion from a path to a string */
 	implicit def pathToString(path: Path): String = path.toString
+	implicit def pathToOptionString(path: Path): Option[String] = Some(path.toString)
 }
 
 /**
@@ -107,7 +108,7 @@ object ClasspathConversions {
  *
  * @see the eclipse documentatin for further information about classpathentries
  */
-case class ClasspathEntry(kind: Kind, path: String, srcpath: Option[String], filter: FilterChain, attributes: List[Tuple2[String, String]]) {
+case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], outputPath: Option[String], filter: FilterChain, attributes: List[Tuple2[String, String]]) {
   /** @see mkString(sep: String) */
   def mkString: String = mkString("")
   /**
@@ -118,7 +119,8 @@ case class ClasspathEntry(kind: Kind, path: String, srcpath: Option[String], fil
     sep +
     "<classpathentry kind=\"" + kind.name + "\"" +
     " path=\"" + path + "\"" +
-    writeSrcPath(srcpath) +
+    writeOptionalPath("sourcepath", srcPath) +
+    writeOptionalPath("output", outputPath) +
     filter.mkString + (
 	    if(attributes.isEmpty)
 	    	" />"
@@ -132,9 +134,9 @@ case class ClasspathEntry(kind: Kind, path: String, srcpath: Option[String], fil
     )
   }
   /** returns the sourcepath as a string when specified */
-  def writeSrcPath(srcpath: Option[String]): String = {
-    srcpath match {
-      case Some(text) => " sourcepath=\"" +  text + "\""
+  def writeOptionalPath(attributeName: String, path: Option[String]): String = {
+    path match {
+      case Some(text) => " %s=\"%s\"".format(attributeName,text)
       case None => ""
     }
   }
@@ -144,15 +146,15 @@ case class ClasspathEntry(kind: Kind, path: String, srcpath: Option[String], fil
  * Factory providing convenience methods for creating <code>ClasspathEntry</code>
  */
 object ClasspathEntry {
-  def apply(kind: Kind, path: String) = new ClasspathEntry(kind, path, None, EmptyFilter, Nil)
-  def apply(kind: Kind, path: String, srcpath: Option[String]) = new ClasspathEntry(kind, path, srcpath, EmptyFilter, Nil)
-  def apply(kind: Kind, path: String, srcpath: String) = new ClasspathEntry(kind, path, Some(srcpath), EmptyFilter, Nil)
-  def apply(kind: Kind, path: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, filter, Nil)
-  def apply(kind: Kind, path: String, srcpath: String, filter: FilterChain) = new ClasspathEntry(kind, path, Some(srcpath), filter, Nil)
-  def apply(kind: Kind, path: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, EmptyFilter, attributes)
-  def apply(kind: Kind, path: String, srcpath: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcpath), EmptyFilter, attributes)
-  def apply(kind: Kind, path: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, filter, attributes)
-  def apply(kind: Kind, path: String, srcpath: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcpath), filter, attributes)
+  def apply(kind: Kind, path: String) = new ClasspathEntry(kind, path, None, None, EmptyFilter, Nil)
+  def apply(kind: Kind, path: String, srcPath: Option[String]) = new ClasspathEntry(kind, path, srcPath, None, EmptyFilter, Nil)
+  def apply(kind: Kind, path: String, srcPath: String) = new ClasspathEntry(kind, path, Some(srcPath), None, EmptyFilter, Nil)
+  def apply(kind: Kind, path: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, None, filter, Nil)
+  def apply(kind: Kind, path: String, outputPath: Option[String], filter: FilterChain) = new ClasspathEntry(kind, path, None, outputPath, filter, Nil)
+  def apply(kind: Kind, path: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, EmptyFilter, attributes)
+  def apply(kind: Kind, path: String, srcPath: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcPath), None, EmptyFilter, attributes)
+  def apply(kind: Kind, path: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, filter, attributes)
+  def apply(kind: Kind, path: String, srcPath: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcPath), None, filter, attributes)
 }
 
 /**
@@ -245,13 +247,14 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>List[ClasspathEntry]</code> with entries for the main source and main test source path.
      */
 	def getScalaPaths: List[ClasspathEntry] = {
+		import ClasspathConversions._
 	    val paths = project.asInstanceOf[MavenStyleScalaPaths]
 	    val entries: List[ClasspathEntry] = if(paths.mainScalaSourcePath.exists) {
 	    	ClasspathEntry(Source, paths.mainScalaSourcePath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
 	    } else Nil
 
 	    if(paths.testScalaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.testScalaSourcePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
+	    	ClasspathEntry(Source, paths.testScalaSourcePath, paths.testCompilePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
 	    } else entries
 	}
 
@@ -259,13 +262,14 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>List[ClasspathEntry]</code> for main java source and main java test source path
      */
 	def getJavaPaths: List[ClasspathEntry] = {
-	    val paths = project.asInstanceOf[MavenStyleScalaPaths]
+	    import ClasspathConversions._
+		val paths = project.asInstanceOf[MavenStyleScalaPaths]
 	    val entries: List[ClasspathEntry] = if (paths.testJavaSourcePath.exists) {
 	    	ClasspathEntry(Source, paths.testJavaSourcePath, FilterChain(IncludeFilter("**/*.java"))) :: Nil
 	    } else Nil
 
 	    if (paths.mainJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.mainJavaSourcePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
+	    	ClasspathEntry(Source, paths.mainJavaSourcePath, paths.testCompilePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
 	    } else entries
 	}
 

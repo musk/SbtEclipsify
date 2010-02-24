@@ -17,7 +17,8 @@ For setting up the plugin see "Using the Plugin in your own project" below.
 You can find ready made jars in the dist folder on git. Download it and use sbt local dependency feature in order to install it in your project.
 
 ## Requirements
-If you have scala sources in your project you need to have the Scala Eclipse plugin installed or else you will not be able to work with the generated project.
+If you have scala sources in your project you need to have the [Scala Eclipse plugin](http://www.scala-tools.org/...) installed or else you will not be able to work with the generated project.
+The plugin only adds the scala plugin nature to the project. The scala version used by eclipse cannot be set from this plugin but depends on the eclipse plugin's version. There is currently no way known to the author to use two different scala versions at the same time.  
 
 ### Building
 SbtEclipsify uses oh wonder sbt as the build tool.
@@ -67,12 +68,12 @@ After reloading the project you should have a new action named "eclipse" which w
 Now all you need to do is import the Project into your Eclipse workspace as an existing Project and everything should work.
 
 ## Known Issues
-The plugin only supports one outputpath currently. Test cannot be compiled to a different path.
-Crossbuilds are not supported officially but they might work.
+Crossbuilds are not supported officially but they might work (testing still pending).
 
 ## FUTURE
 * Better documentation (as always :) )
 * Add ability to fine tune generation
+* Support for java only projects? Does this even make sense when using sbt?
 * Add ability to include directories besides those in test and main
 * Add generation of subprojects like with eclipse:eclipse from maven
 * Improve the test coverage (still need to figure out how to mock the sbt parts)

@@ -1,6 +1,7 @@
 * Switched to [sbt 0.7.x][1] if you are still using version 0.5.6 or below you need to use [sbt-eclipsify 0.4.2][2]
 * Sources are now attached to the classpathentry
+* Outputpaths are now attached to classpathentries for test classes
 * Made code more streamline and readable
 
-[1]: http://???
-[2]: http://www.github.com/SbtEclipsify/downloads...
+[1]: http://code.google.com/p/simple-build-tool
+[2]: http://github.com/musk/SbtEclipsify/downloads
