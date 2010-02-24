@@ -34,7 +34,7 @@ The following properties can be added to the build.properties of your project in
 
 `include.plugin`(default: true) => if set to true the path to the plugin defintion is added as a source folder to the classpath. This automatically puts the sbt jar on the classpath.
 
-## Using the Plugin in your own project 
+## Using the Plugin in your own project
 You need to create a plugin definition in your sbt project.
 The plugin definition can be any Scala class that extends PluginDefinition and is located in the plugins directory in the projects subfolder of your sbt project.
 
@@ -76,4 +76,3 @@ Crossbuilds are not supported officially but they might work.
 * Add ability to include directories besides those in test and main
 * Add generation of subprojects like with eclipse:eclipse from maven
 * Improve the test coverage (still need to figure out how to mock the sbt parts)
-* Add sources when available to classepathentries

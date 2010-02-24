@@ -219,7 +219,6 @@ class ClasspathFile(project: Project, log: Logger) {
 		jar.toString match {
 			case JarEx(name) => {
 				val jarName = name + "-sources.jar"
-				log.info(jarName)
 				val finder: PathFinder = basePath ** new ExactFilter(jarName)
 				val seq = finder.get.toSeq
 				seq.firstOption.map(_.toString)

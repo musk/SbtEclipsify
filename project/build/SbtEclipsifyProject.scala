@@ -27,9 +27,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 import sbt._
-//import de.element34.sbteclipsify._
+import de.element34.sbteclipsify._
 
-class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) { // with SbtEclipsifyPlugin {
+class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) with SbtEclipsifyPlugin { //with posterous.Publish {
 	override def compileOptions =  super.compileOptions ++ (Unchecked :: Deprecation :: Nil)
   	override def mainResources = super.mainResources +++ "NOTICE" +++ "LICENSE" +++ (path("licenses") * "*")
 

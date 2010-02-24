@@ -30,5 +30,6 @@
 import sbt._
 
 class SbtEclipsifyPlugin(info: ProjectInfo) extends PluginDefinition(info) {
-	//lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.4.1"
+	lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.5.0"
+	lazy val posterous = "net.databinder" % "posterous-sbt" % "0.1.3" from "http://tristanhunt.com:8081/content/groups/public/"
 }

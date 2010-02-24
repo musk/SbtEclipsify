@@ -1,0 +1,3 @@
+* Licenses updated
+* Fixed NPE during .classpath generation
+* Added sbt-eclipsify plugin to project 
