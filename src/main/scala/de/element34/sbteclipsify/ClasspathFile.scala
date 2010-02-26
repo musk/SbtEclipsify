@@ -49,6 +49,7 @@ object ClasspathConversions {
 class ClasspathFile(project: Project, log: Logger) {
 	import ClasspathConversions._
     lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
+    val srcPatterns: List[String] = "-sources.jar" :: "-src.jar" :: Nil
 
     /**
      * writes the .classpath file to the project root
@@ -94,23 +95,28 @@ class ClasspathFile(project: Project, log: Logger) {
 	def getDependencyEntries(basePath: Path): List[ClasspathEntry] = {
 		import Path._
 
-		val finder: PathFinder = basePath ** GlobFilter("*.jar") --- basePath ** GlobFilter("*-sources.jar")
+		val exclude: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => GlobFilter("*" + str))
+		val finder: PathFinder = exclude.foldLeft(basePath ** GlobFilter("*.jar"))(_ --- _)
+
 		val jarPaths: List[Path] = finder.get.flatMap(Path.relativize(project.info.projectPath, _)).toList
 		jarPaths.map(path => ClasspathEntry(Library, path.relativePath, findSource(basePath, path)))
 	}
 
-	def findSource(basePath: Path, jar: Path): Option[String] = {
+	private def findSource(basePath: Path, jar: Path): Option[String] = {
 		import sbt.Project._
 		val JarEx = """.*/([^/]*)\.jar""".r
 		jar.toString match {
 			case JarEx(name) => {
-				val jarName = name + "-sources.jar"
-				val finder: PathFinder = basePath ** new ExactFilter(jarName)
-				val seq = finder.get.toSeq
+				val finders: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => new ExactFilter(name + str))
+				val seq = finders.foldLeft(Path.emptyPathFinder)(_ +++ _).get.toSeq
 				seq.firstOption.map(_.toString)
 			}
 			case _ => None
 		}
+	}
+
+	private def constructPathFinder(basePath: Path, list: List[String], conv: String => FileFilter): List[PathFinder] = {
+		list.map(str => basePath ** conv(str))
 	}
 
 	/**
