@@ -96,7 +96,8 @@ class ClasspathFile(project: Project, log: Logger) {
 		import Path._
 
 		val exclude: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => GlobFilter("*" + str))
-		val finder: PathFinder = exclude.foldLeft(basePath ** GlobFilter("*.jar"))(_ --- _)
+		val baseFinder: PathFinder = basePath ** GlobFilter("*.jar")
+		val finder: PathFinder = exclude.foldLeft(baseFinder)(_ --- _)
 
 		val jarPaths: List[Path] = finder.get.flatMap(Path.relativize(project.info.projectPath, _)).toList
 		jarPaths.map(path => ClasspathEntry(Library, path.relativePath, findSource(basePath, path)))
