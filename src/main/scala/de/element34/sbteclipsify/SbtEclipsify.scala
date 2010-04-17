@@ -33,7 +33,7 @@ import sbt._
 /**
  * Defines the plugin with the "eclipse" task for sbt
  */
-trait SbtEclipsifyPlugin extends Project {
+trait Eclipsify extends Project {
   lazy val eclipse = task {
     log.info("Creating eclipse project...")
     writeProjectFile(log) match {
@@ -42,6 +42,7 @@ trait SbtEclipsifyPlugin extends Project {
     }
   }
 
+  lazy val eclipseName = propertyOptional[String](projectName.value)
   lazy val projectDescription = propertyOptional[String](projectName.value + " " + projectVersion.value)
   lazy val includeProject = propertyOptional[Boolean](false)
   lazy val includePlugin = propertyOptional[Boolean](false)
@@ -59,3 +60,9 @@ trait SbtEclipsifyPlugin extends Project {
    */
   def writeProjectFile(log: Logger): Option[String] = ProjectFile(this, log).writeFile
 }
+
+/**
+ * @deprecated Use Eclipsify instead. This trait will be removed in 0.6
+ */
+@deprecated
+trait SbtEclipsifyPlugin extends Eclipsify

@@ -124,7 +124,7 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>List[ClasspathEntry]</code> with entries for the project build directory and the project plugin directory
      */
   	def getProjectPath: List[ClasspathEntry] = {
-	    val plugin = project.asInstanceOf[SbtEclipsifyPlugin]
+	    val plugin = project.asInstanceOf[Eclipsify]
 	    val entries: List[ClasspathEntry] = if(plugin.includeProject.value && project.info.builderProjectPath.exists) {
 	    	ClasspathEntry(Source, project.info.builderProjectPath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
 	    } else Nil
@@ -169,7 +169,7 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>List[ClasspathEntry]</code> for sbt jar
      */
 	def getSbtJarForSbtProject: List[ClasspathEntry] = {
-	    val plugin = project.asInstanceOf[SbtEclipsifyPlugin]
+	    val plugin = project.asInstanceOf[Eclipsify]
 	    if(plugin.sbtDependency.value || plugin.includeProject.value || plugin.includePlugin.value) {
 			val scalaVersion = project.buildScalaVersion
 		    val sbtVersion = project.sbtVersion.get.get
@@ -184,7 +184,7 @@ class ClasspathFile(project: Project, log: Logger) {
 }
 
 /**
- * Factory to for creating ClasspathFile instances
+ * Factory for creating ClasspathFile instances
  */
 object ClasspathFile {
 

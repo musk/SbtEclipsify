@@ -50,7 +50,7 @@ class ProjectFile(project: Project, log: Logger) {
     lazy val projectFile: File = project.info.projectPath / ".project" asFile
     lazy val projectContent = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
 <projectDescription>
-  <name>{project.projectName.get.getOrElse("")}</name>
+  <name>{getProjectName}</name>
   <comment>{getProjectDescription}</comment>
   <projects>{createSubProjects}</projects>
   <buildSpec>
@@ -64,7 +64,8 @@ class ProjectFile(project: Project, log: Logger) {
   </natures>
 </projectDescription>
 
-    def getProjectDescription =  project.asInstanceOf[SbtEclipsifyPlugin].projectDescription.value
+    def getProjectName = project.asInstanceOf[Eclipsify].eclipseName.value
+    def getProjectDescription =  project.asInstanceOf[Eclipsify].projectDescription.value
 
     /**
      * Creates dependent sub projects

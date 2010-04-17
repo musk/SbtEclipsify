@@ -1,2 +1,4 @@
 * Added ability to discover "-src" source jars beside "-sources"
 * Refactored code for better readability
+* Added property eclipse.name to overwrite project name in eclipse
+* Replaced trait SbtEclipsifyPlugin with Eclipsify for easier use and marked SbtEclipsifyPlugin as deprecated.

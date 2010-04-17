@@ -33,11 +33,13 @@ class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) w
 	override def compileOptions =  super.compileOptions ++ (Unchecked :: Deprecation :: Nil)
   	override def mainResources = super.mainResources +++ "NOTICE" +++ "LICENSE" +++ (path("licenses") * "*")
 
-  	lazy val scalaTest = "org.scalatest" % "scalatest" % "1.0"
+  	val scalaSnapshotToolsRepository = "Scala Tools Repository" at "http://nexus.scala-tools.org/content/repositories/snapshots/"
+
+  	lazy val scalaTest = "org.scalatest" % "scalatest" % "1.1-SNAPSHOT" % "test"
 
   	override def managedStyle = ManagedStyle.Maven
 
-  	val credPath = Path.userHome / ".ivy2" / ".credentials"
+  	val credPath = Path.userHome / ".credentials"
   	Credentials(credPath, log)
 
   	val publishTo = "Sonatype Nexus Repository Manager" at "http://nexus.scala-tools.org/content/repositories/releases/"

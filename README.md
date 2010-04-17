@@ -18,7 +18,7 @@ You can find ready made jars in the dist folder on git. Download it and use sbt 
 
 ## Requirements
 If you have scala sources in your project you need to have the [Scala Eclipse plugin](http://www.scala-tools.org/...) installed or else you will not be able to work with the generated project.
-The plugin only adds the scala plugin nature to the project. The scala version used by eclipse cannot be set from this plugin but depends on the eclipse plugin's version. There is currently no way known to the author to use two different scala versions at the same time.  
+The plugin only adds the scala plugin nature to the project. The scala version used by eclipse cannot be set from this plugin but depends on the eclipse plugin's version. There is currently no way known to the author to use two different scala versions at the same time.
 
 ### Building
 SbtEclipsify uses oh wonder sbt as the build tool.
@@ -50,22 +50,24 @@ next create a file name MySbtProjectPlugins.scala and add the following text to 
      import sbt._
 
      class MySbtProjectPlugins(info: ProjectInfo) extends PluginDefinition(info) {
-      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.5.0"
+      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.5.1"
      }
 
 This will enable your project to get the plugin in order to use it you need to add it to your project defintion.
-Open your project definition file, something like "MySbtProject.scala" in "project/build/" folder, and add the SbtEclipsifyPlugin trait.
+Open your project definition file, something like "MySbtProject.scala" in "project/build/" folder, and add the Eclipsify trait.
 
     import sbt._
     import de.element34.sbteclipsify._
 
-    class MySbtProject(info: ProjectInfo) extends DefaultProject(info) with SbtEclipsifyPlugin {
+    class MySbtProject(info: ProjectInfo) extends DefaultProject(info) with Eclipsify {
       // the project definition here
     }
 
 After reloading the project you should have a new action named "eclipse" which will generate a .project and a .classpath file in the MySbtProject folder.
 
 Now all you need to do is import the Project into your Eclipse workspace as an existing Project and everything should work.
+
+__Note__: The old trait SbtEclipsifyPlugin has been marked deprecated as of 0.5.1 and will be removed in a future version.
 
 ## Known Issues
 Crossbuilds are not supported officially but they might work (testing still pending).
