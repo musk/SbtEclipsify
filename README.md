@@ -70,6 +70,8 @@ Now all you need to do is import the Project into your Eclipse workspace as an e
 __Note__: The old trait SbtEclipsifyPlugin has been marked deprecated as of 0.5.1 and will be removed in a future version.
 
 ## Known Issues
+Currently sbt-eclipsify depends on scalatest 1.1-SNAPSHOT for its tests. This results in a dependency resolving error when the plugin is being retrieved. To work around this issue add `val scalaSnapshotToolsRepository = "Scala Tools Repository" at "http://nexus.scala-tools.org/content/repositories/snapshots/"` to your plugin definition file. (e.g. MySbtProjectPlugins)
+
 Crossbuilds are not supported officially but they might work (testing still pending).
 
 ## FUTURE
