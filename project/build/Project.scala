@@ -43,4 +43,35 @@ class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) w
   	Credentials(credPath, log)
 
   	val publishTo = "Sonatype Nexus Repository Manager" at "http://nexus.scala-tools.org/content/repositories/releases/"
+
+  	override def pomExtra =
+  		<description>sbt-eclipsify is a plugin provided under a BSD-License. It generates .classpath and .project files for the Eclipse IDE from a sbt project.</description>
+  		<developers>
+  			<developer>
+  				<id>slanger</id>
+  				<name>Stefan Langer</name>
+  				<email>mailtolanger@googlemail.com</email>
+  				<roles>
+  					<role>Project Lead</role>
+  					<role>Developer</role>
+  				</roles>
+  				<timezone>2</timezone>
+  			</developer>
+  		</developers>
+  		<licenses>
+	  		<license>
+		  		<name>BSD-License</name>
+		  		<url></url>
+		  		<distribution>repo</distribution>
+		  	</license>
+		</licenses>
+		<scm>
+			<connection>git@github.com:musk/SbtEclipsify.git</connection>
+			<tag>{projectVersion.value}</tag>
+			<url>http://www.github.com/musk/SbtEclipsify</url>
+		</scm>
+		<organisation>
+			<name>Element34</name>
+			<url>http://www.element34.de</url>
+		</organisation>
 }
