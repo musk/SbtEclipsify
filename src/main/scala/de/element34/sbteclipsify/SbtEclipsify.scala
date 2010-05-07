@@ -34,6 +34,9 @@ import sbt._
  * Defines the plugin with the "eclipse" task for sbt
  */
 trait Eclipsify extends Project {
+  // TODO make this work in a multiproject setup
+  // important projectClosure method in Project
+  // project.info.parent for subproject to parent relation
   lazy val eclipse = task {
     log.info("Creating eclipse project...")
     writeProjectFile(log) match {
@@ -47,7 +50,12 @@ trait Eclipsify extends Project {
   lazy val includeProject = propertyOptional[Boolean](false)
   lazy val includePlugin = propertyOptional[Boolean](false)
   lazy val sbtDependency = propertyOptional[Boolean](false)
+  lazy val pluginProject = propertyOptional[Boolean](false)
 //  lazy val customSrcPattern = propertyOptional[RegEx]()
+
+  def findProjects(log: Logger): List[Project] = {
+    Nil
+  }
 
   /**
    * Writes the .classpath file to filesystem.

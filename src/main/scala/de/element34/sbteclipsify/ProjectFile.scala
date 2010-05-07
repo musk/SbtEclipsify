@@ -33,6 +33,8 @@ import sbt._
 import java.io.File
 import java.nio.charset.Charset._
 
+import scala.xml._
+
 /**
  * Defines the structure for a .project file.
  */
@@ -44,6 +46,8 @@ class ProjectFile(project: Project, log: Logger) {
   def writeFile: Option[String] = {
 
     val scalaBuilder = "ch.epfl.lamp.sdt.core.scalabuilder"
+    val manifestBuilder = "org.eclipse.pde.ManifestBuilder"
+    val schemaBuilder = "org.eclipse.pde.SchemaBuilder"
     val scalaNature = "ch.epfl.lamp.sdt.core.scalanature"
     val javaNature = "org.eclipse.jdt.core.javanature"
 
@@ -57,6 +61,7 @@ class ProjectFile(project: Project, log: Logger) {
     <buildCommand>
       <name>{scalaBuilder}</name>
     </buildCommand>
+    {getPluginXml}
   </buildSpec>
   <natures>
     <nature>{scalaNature}</nature>
@@ -64,6 +69,18 @@ class ProjectFile(project: Project, log: Logger) {
   </natures>
 </projectDescription>
 
+	def getPluginXml: NodeSeq = {
+		val plugin = project.asInstanceOf[Eclipsify]
+		if(plugin.pluginProject.value) {
+	<buildCommand>
+	  <name>{manifestBuilder}</name>
+	</buildCommand>
+	<buildCommand>
+	  <name>{schemaBuilder}</name>
+	</buildCommand>
+		}
+		else NodeSeq.Empty
+	}
     def getProjectName = project.asInstanceOf[Eclipsify].eclipseName.value
     def getProjectDescription =  project.asInstanceOf[Eclipsify].projectDescription.value
 

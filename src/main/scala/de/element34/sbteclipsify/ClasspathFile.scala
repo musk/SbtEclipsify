@@ -51,6 +51,10 @@ class ClasspathFile(project: Project, log: Logger) {
     lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
     val srcPatterns: List[String] = "-sources.jar" :: "-src.jar" :: Nil
 
+    val scalaContainer = "ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"
+    val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
+    val depPluginsContainer = "org.eclipse.pde.core.requiredPlugins"
+
     /**
      * writes the .classpath file to the project root
      * @return <code>Some(error)</code>, where error designates the error message to display, when an error occures else returns <code>None</code>
@@ -60,11 +64,9 @@ class ClasspathFile(project: Project, log: Logger) {
     	val dependencies = basicScalaPaths.dependencyPath
     	val managedDependencies = basicScalaPaths.managedDependencyPath
 
-    	val scalaContainer = "ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"
-    	val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
-
     	val entries = getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
 	      			  getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
+	      			  getPluginEntries ++
 	      			  List(ClasspathEntry(Container, scalaContainer),
 	      			  ClasspathEntry(Container, javaContainer),
 	      			  ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath))
@@ -180,6 +182,13 @@ class ClasspathFile(project: Project, log: Logger) {
 		    entries
 		}
 	    else Nil
+	}
+
+	def getPluginEntries: List[ClasspathEntry] = {
+		val plugin = project.asInstanceOf[Eclipsify]
+		if(plugin.pluginProject.value)
+			List(ClasspathEntry(Container, depPluginsContainer))
+		else Nil
 	}
 }
 

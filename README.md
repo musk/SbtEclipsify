@@ -36,6 +36,8 @@ The following properties can be added to the build.properties of your project in
 
 `include.plugin`(default: true) => if set to true the path to the plugin defintion is added as a source folder to the classpath. This automatically puts the sbt jar on the classpath.
 
+`plugin.project` (default: false) => if set to true the project is setup to be a plugin project (osgi projects are handled as plugin projects in eclipse). This results in the plugin dependencies container being added to .classpath and the manifest and schema builder being added to .project.
+
 ## Using the Plugin in your own project
 You need to create a plugin definition in your sbt project.
 The plugin definition can be any Scala class that extends PluginDefinition and is located in the plugins directory in the projects subfolder of your sbt project.
@@ -51,7 +53,7 @@ next create a file name MySbtProjectPlugins.scala and add the following text to 
      import sbt._
 
      class MySbtProjectPlugins(info: ProjectInfo) extends PluginDefinition(info) {
-      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.5.1"
+      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.5.2"
      }
 
 This will enable your project to get the plugin in order to use it you need to add it to your project defintion.

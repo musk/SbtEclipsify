@@ -1,0 +1,2 @@
+* Added support for plugin projects simply add `plugin.project=true` to your build.properties file.
+
