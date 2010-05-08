@@ -1,2 +1,7 @@
-* Added missing plugin nature for plugin projects to .project 
+### Bugfix Release
+
+ * Added missing plugin nature for plugin projects to .project
+
+_All users using 0.5.2 are advised to upgrade to 0.5.3_
+
 
