@@ -1,0 +1,2 @@
+* Added missing plugin nature for plugin projects to .project 
+

@@ -50,6 +50,7 @@ class ProjectFile(project: Project, log: Logger) {
     val schemaBuilder = "org.eclipse.pde.SchemaBuilder"
     val scalaNature = "ch.epfl.lamp.sdt.core.scalanature"
     val javaNature = "org.eclipse.jdt.core.javanature"
+    val pluginNature = "org.eclipse.pde.PluginNature"
 
     lazy val projectFile: File = project.info.projectPath / ".project" asFile
     lazy val projectContent = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
@@ -66,21 +67,28 @@ class ProjectFile(project: Project, log: Logger) {
   <natures>
     <nature>{scalaNature}</nature>
     <nature>{javaNature}</nature>
+    {getPluginNature}
   </natures>
 </projectDescription>
+	def getPluginNature: NodeSeq = doIfPluginProject {
+		<nature>{pluginNature}</nature>
+	}
 
-	def getPluginXml: NodeSeq = {
-		val plugin = project.asInstanceOf[Eclipsify]
-		if(plugin.pluginProject.value) {
+	def getPluginXml: NodeSeq = doIfPluginProject{
 	<buildCommand>
 	  <name>{manifestBuilder}</name>
 	</buildCommand>
 	<buildCommand>
 	  <name>{schemaBuilder}</name>
 	</buildCommand>
-		}
+	}
+
+	def doIfPluginProject(body: => NodeSeq): NodeSeq = {
+		val plugin = project.asInstanceOf[Eclipsify]
+		if(plugin.pluginProject.value) body
 		else NodeSeq.Empty
 	}
+
     def getProjectName = project.asInstanceOf[Eclipsify].eclipseName.value
     def getProjectDescription =  project.asInstanceOf[Eclipsify].projectDescription.value
 
