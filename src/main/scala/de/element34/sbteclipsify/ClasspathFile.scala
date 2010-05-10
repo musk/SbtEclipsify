@@ -48,12 +48,16 @@ object ClasspathConversions {
  */
 class ClasspathFile(project: Project, log: Logger) {
 	import ClasspathConversions._
+	import Utils._
+
     lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
     val srcPatterns: List[String] = "-sources.jar" :: "-src.jar" :: Nil
 
     val scalaContainer = "ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"
     val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
     val depPluginsContainer = "org.eclipse.pde.core.requiredPlugins"
+
+    implicit val p = project
 
     /**
      * writes the .classpath file to the project root
@@ -126,12 +130,11 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>List[ClasspathEntry]</code> with entries for the project build directory and the project plugin directory
      */
   	def getProjectPath: List[ClasspathEntry] = {
-	    val plugin = project.asInstanceOf[Eclipsify]
-	    val entries: List[ClasspathEntry] = if(plugin.includeProject.value && project.info.builderProjectPath.exists) {
+	    val entries: List[ClasspathEntry] = if(get(_.includeProject) && project.info.builderProjectPath.exists) {
 	    	ClasspathEntry(Source, project.info.builderProjectPath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
 	    } else Nil
 
-	    if(plugin.includePlugin.value && project.info.pluginsPath.exists) {
+	    if(get(_.includePlugin) && project.info.pluginsPath.exists) {
 	    	ClasspathEntry(Source, project.info.pluginsPath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
 	    } else entries
 	}

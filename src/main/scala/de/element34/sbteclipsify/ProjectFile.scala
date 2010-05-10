@@ -44,6 +44,7 @@ class ProjectFile(project: Project, log: Logger) {
    * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>
    */
   def writeFile: Option[String] = {
+	import Utils._
 
     val scalaBuilder = "ch.epfl.lamp.sdt.core.scalabuilder"
     val manifestBuilder = "org.eclipse.pde.ManifestBuilder"
@@ -70,28 +71,24 @@ class ProjectFile(project: Project, log: Logger) {
     {getPluginNature}
   </natures>
 </projectDescription>
-	def getPluginNature: NodeSeq = doIfPluginProject {
+
+	def getPluginNature: NodeSeq = writeNodeSeq(get(_.pluginProject)){ _ =>
 		<nature>{pluginNature}</nature>
 	}
 
-	def getPluginXml: NodeSeq = doIfPluginProject{
-	<buildCommand>
-	  <name>{manifestBuilder}</name>
-	</buildCommand>
-	<buildCommand>
-	  <name>{schemaBuilder}</name>
-	</buildCommand>
+	def getPluginXml: NodeSeq = writeNodeSeq(get(_.pluginProject)){ _ =>
+		<buildCommand>
+		  <name>{manifestBuilder}</name>
+		</buildCommand>
+		<buildCommand>
+		  <name>{schemaBuilder}</name>
+		</buildCommand>
 	}
 
-	def doIfPluginProject(body: => NodeSeq): NodeSeq = {
-		val plugin = project.asInstanceOf[Eclipsify]
-		if(plugin.pluginProject.value) body
-		else NodeSeq.Empty
-	}
+    def getProjectName: String = get(_.eclipseName)
+    def getProjectDescription: String =  get(_.projectDescription)
 
-    def getProjectName = project.asInstanceOf[Eclipsify].eclipseName.value
-    def getProjectDescription =  project.asInstanceOf[Eclipsify].projectDescription.value
-
+    implicit def sbtProject: Project = project
     /**
      * Creates dependent sub projects
      */
