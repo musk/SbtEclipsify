@@ -69,7 +69,7 @@ class ClasspathFile(project: Project, log: Logger) {
 	      			  getPluginEntries ++
 	      			  List(ClasspathEntry(Container, scalaContainer),
 	      			  ClasspathEntry(Container, javaContainer),
-	      			  ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath))
+	      			  ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
 
 	    lazy val classpathContent = """<?xml version="1.0" encoding="UTF-8" ?>""" +
 	    	"\n<classpath>" +
@@ -143,11 +143,11 @@ class ClasspathFile(project: Project, log: Logger) {
 		import ClasspathConversions._
 	    val paths = project.asInstanceOf[MavenStyleScalaPaths]
 	    val entries: List[ClasspathEntry] = if(paths.mainScalaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.mainScalaSourcePath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
+	    	ClasspathEntry(Source, paths.mainScalaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
 	    } else Nil
 
 	    if(paths.testScalaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.testScalaSourcePath, paths.testCompilePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
+	    	ClasspathEntry(Source, paths.testScalaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
 	    } else entries
 	}
 
@@ -158,11 +158,11 @@ class ClasspathFile(project: Project, log: Logger) {
 	    import ClasspathConversions._
 		val paths = project.asInstanceOf[MavenStyleScalaPaths]
 	    val entries: List[ClasspathEntry] = if (paths.testJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.testJavaSourcePath, FilterChain(IncludeFilter("**/*.java"))) :: Nil
+	    	ClasspathEntry(Source, paths.testJavaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: Nil
 	    } else Nil
 
 	    if (paths.mainJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.mainJavaSourcePath, paths.testCompilePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
+	    	ClasspathEntry(Source, paths.mainJavaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
 	    } else entries
 	}
 
