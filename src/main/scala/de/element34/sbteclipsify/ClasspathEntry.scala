@@ -93,6 +93,7 @@ object ClasspathEntry {
   def apply(kind: Kind, path: String, srcPath: String) = new ClasspathEntry(kind, path, Some(srcPath), None, EmptyFilter, Nil)
   def apply(kind: Kind, path: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, None, filter, Nil)
   def apply(kind: Kind, path: String, outputPath: Option[String], filter: FilterChain) = new ClasspathEntry(kind, path, None, outputPath, filter, Nil)
+  def apply(kind: Kind, path: String, outputPath: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, Some(outputPath), filter, Nil)
   def apply(kind: Kind, path: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, EmptyFilter, attributes)
   def apply(kind: Kind, path: String, srcPath: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcPath), None, EmptyFilter, attributes)
   def apply(kind: Kind, path: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, filter, attributes)
