@@ -1,0 +1,3 @@
+### Bugfix Release ###
+
+ * bug fix from dholbrook for .classpath file for subprojects not relative to subprojects 
