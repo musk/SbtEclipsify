@@ -53,7 +53,7 @@ class ClasspathFile(project: Project, log: Logger) {
     lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
     val srcPatterns: List[String] = "-sources.jar" :: "-src.jar" :: Nil
 
-    val scalaContainer = "ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"
+    val scalaContainer = "org.scala-ide.sdt.launching.SCALA_CONTAINER"
     val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
     val depPluginsContainer = "org.eclipse.pde.core.requiredPlugins"
 

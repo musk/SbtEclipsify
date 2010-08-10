@@ -46,10 +46,10 @@ class ProjectFile(project: Project, log: Logger) {
   def writeFile: Option[String] = {
 	import Utils._
 
-    val scalaBuilder = "ch.epfl.lamp.sdt.core.scalabuilder"
+    val scalaBuilder = "org.scala-ide.sdt.core.scalabuilder"
     val manifestBuilder = "org.eclipse.pde.ManifestBuilder"
     val schemaBuilder = "org.eclipse.pde.SchemaBuilder"
-    val scalaNature = "ch.epfl.lamp.sdt.core.scalanature"
+    val scalaNature = "org.scala-ide.sdt.core.scalanature"
     val javaNature = "org.eclipse.jdt.core.javanature"
     val pluginNature = "org.eclipse.pde.PluginNature"
 
