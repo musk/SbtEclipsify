@@ -67,13 +67,15 @@ class ClasspathFile(project: Project, log: Logger) {
     	val basicScalaPaths = project.asInstanceOf[BasicScalaPaths]
     	val dependencies = basicScalaPaths.dependencyPath
     	val managedDependencies = basicScalaPaths.managedDependencyPath
+      val referencedProjects = project.info.dependencies.toList
 
-    	val entries = getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
+    	val entries = getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++ 
+    	          getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++
 	      			  getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
 	      			  getPluginEntries ++
 	      			  List(ClasspathEntry(Container, scalaContainer),
 	      			  ClasspathEntry(Container, javaContainer),
-	      			  ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+	      			  ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.relativePath))
 
 	    lazy val classpathContent = """<?xml version="1.0" encoding="UTF-8" ?>""" +
 	    	"\n<classpath>" +
@@ -94,6 +96,36 @@ class ClasspathFile(project: Project, log: Logger) {
 				FileUtilities.write(classpathFile, content, forName("UTF-8"), log)
 		}
 	}
+	
+	def getReferencedProjects(projects: List[Project]) : List[ClasspathEntry] = {
+	  projects.map { proj => 
+	    ClasspathEntry(Source, "/" + proj.name, List(("combineaccessrules", "false")))
+	  }
+	}
+	
+	def getReferencedProjectsDependencies(projects: List[Project]) : List[ClasspathEntry] = {
+	  projects.foldLeft(List[ClasspathEntry]()) { (list, proj) => 
+	    val basicScalaPaths = proj.asInstanceOf[BasicScalaPaths]
+    	val dependencies = basicScalaPaths.dependencyPath
+    	val managedDependencies = basicScalaPaths.managedDependencyPath
+    	
+    	list ++ 
+    	getReferencedProjectDependencyEntries(proj.name, proj.info.projectPath, dependencies) ++
+      getReferencedProjectDependencyEntries(proj.name, proj.info.projectPath, managedDependencies)
+	  }
+	}
+	def getReferencedProjectDependencyEntries(extProjName: String, extProjPath: Path, basePath: Path): List[ClasspathEntry] = {
+		import Path._
+		val exclude: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => GlobFilter("*" + str))
+		val baseFinder: PathFinder = basePath ** GlobFilter("*.jar")
+		val finder: PathFinder = exclude.foldLeft(baseFinder)(_ --- _)
+		
+		val jarPaths = finder.get.flatMap(Path.relativize(extProjPath, _)).toList
+		jarPaths.map { path => 
+		  val eclipsePath = "/" + extProjName + "/" + path.relativePath
+		  ClasspathEntry(Library, eclipsePath, Some(eclipsePath))
+		}
+	}
 
 	/**
      * @return <code>List[ClasspathEntry]</code> containing entries for each jar contained in path.
@@ -104,7 +136,7 @@ class ClasspathFile(project: Project, log: Logger) {
 		val exclude: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => GlobFilter("*" + str))
 		val baseFinder: PathFinder = basePath ** GlobFilter("*.jar")
 		val finder: PathFinder = exclude.foldLeft(baseFinder)(_ --- _)
-
+		
 		val jarPaths: List[Path] = finder.get.flatMap(Path.relativize(project.info.projectPath, _)).toList
 		jarPaths.map(path => ClasspathEntry(Library, path.relativePath, findSource(basePath, path)))
 	}
@@ -146,11 +178,11 @@ class ClasspathFile(project: Project, log: Logger) {
 		import ClasspathConversions._
 	    val paths = project.asInstanceOf[MavenStyleScalaPaths]
 	    val entries: List[ClasspathEntry] = if(paths.mainScalaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.mainScalaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
+	    	ClasspathEntry(Source, paths.mainScalaSourcePath.relativePath, FilterChain(IncludeFilter("**/*.scala"), ExcludeFilter("**/.svn/|**/CVS/"))) :: Nil
 	    } else Nil
 
 	    if(paths.testScalaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.testScalaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
+	    	ClasspathEntry(Source, paths.testScalaSourcePath.relativePath, paths.testCompilePath.relativePath, FilterChain(IncludeFilter("**/*.scala"), ExcludeFilter("**/.svn/|**/CVS/"))) :: entries
 	    } else entries
 	}
 
@@ -161,11 +193,11 @@ class ClasspathFile(project: Project, log: Logger) {
 	    import ClasspathConversions._
 		val paths = project.asInstanceOf[MavenStyleScalaPaths]
 	    val entries: List[ClasspathEntry] = if (paths.testJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.testJavaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: Nil
+	    	ClasspathEntry(Source, paths.testJavaSourcePath.relativePath, FilterChain(IncludeFilter("**/*.java"), ExcludeFilter("**/.svn/|**/CVS/"))) :: Nil
 	    } else Nil
 
 	    if (paths.mainJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.mainJavaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
+	    	ClasspathEntry(Source, paths.mainJavaSourcePath.relativePath, paths.testCompilePath.relativePath, FilterChain(IncludeFilter("**/*.java"), ExcludeFilter("**/.svn/|**/CVS/"))) :: entries
 	    } else entries
 	}
 
