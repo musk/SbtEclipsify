@@ -53,7 +53,7 @@ next create a file name MySbtProjectPlugins.scala and add the following text to 
      import sbt._
 
      class MySbtProjectPlugins(info: ProjectInfo) extends PluginDefinition(info) {
-      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.5.3"
+      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.5.5"
      }
 
 This will enable your project to get the plugin in order to use it you need to add it to your project defintion.
