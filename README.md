@@ -1,7 +1,6 @@
 # SbtEclipsify
 
 Plugin for sbt (http://code.google.com/p/simple-build-tool/) 0.7.x for creating .classpath and .project files for the Ecipse IDE (http://www.eclipse.org).
-It is currently in Beta state and is not feature complete.
 If you need to use this plugin with sbt version prior to 0.5.6 then you need to use version 0.4.1
 
 ## License
@@ -10,7 +9,7 @@ Just like sbt this software is distributed under the BSD License (http://www.ope
 ## Getting the Plugin
 In order to use the plugin you can either download one of the provided jars in the dist folder or you can build it yourself.
 Easiest is to add a dependency to the plugin in your plugin defintion `"de.element34" % "sbt-eclipsify" % "<version>"`.
-Calling `update` in sbt will pull in the needed dependency.
+Calling `reload` in sbt will pull in the needed dependency.
 For setting up the plugin see "Using the Plugin in your own project" below.
 
 ### Downloading
@@ -53,7 +52,7 @@ next create a file name MySbtProjectPlugins.scala and add the following text to 
      import sbt._
 
      class MySbtProjectPlugins(info: ProjectInfo) extends PluginDefinition(info) {
-      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.5.5"
+      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.6.0"
      }
 
 This will enable your project to get the plugin in order to use it you need to add it to your project defintion.
@@ -70,7 +69,7 @@ After reloading the project you should have a new action named "eclipse" which w
 
 Now all you need to do is import the Project into your Eclipse workspace as an existing Project and everything should work.
 
-__Note__: The old trait SbtEclipsifyPlugin has been marked deprecated as of 0.5.1 and will be removed in a future version.
+__Note__: The old trait SbtEclipsifyPlugin has been removed from this version.
 
 ## Known Issues
 Crossbuilds are not supported officially but they might work (testing still pending).

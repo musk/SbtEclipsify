@@ -1,5 +1,0 @@
-### Update names to newly structured Scala IDE ###
-
- * fixed names for Scala container, nature and builder to new Scala IDE names 
-
-Thanks to plalloni for this fix

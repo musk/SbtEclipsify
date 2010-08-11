@@ -1,0 +1,8 @@
+### Update names to newly structured Scala IDE ###
+
+ * fixed names for Scala container, nature and builder to new Scala IDE names
+ * removed trait SbtEclipsifyPlugin use Eclipsify instead
+
+__WARNING__: This upgrade will not work on versions older then master-2.8.final of the Scala IDE
+
+Thanks to plalloni for this fix

@@ -68,9 +68,3 @@ trait Eclipsify extends Project {
    */
   def writeProjectFile(log: Logger): Option[String] = ProjectFile(this, log).writeFile
 }
-
-/**
- * @deprecated Use Eclipsify instead. This trait will be removed in 0.6
- */
-@deprecated
-trait SbtEclipsifyPlugin extends Eclipsify
