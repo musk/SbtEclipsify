@@ -35,7 +35,7 @@ class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) w
 
   	val scalaSnapshotToolsRepository = "Scala Tools Repository" at "http://nexus.scala-tools.org/content/repositories/snapshots/"
 
-  	lazy val scalaTest = "org.scalatest" % "scalatest" % "1.1-SNAPSHOT" % "test"
+  	lazy val scalaTest = "org.scalatest" % "scalatest" % "1.1" % "test"
 
   	override def managedStyle = ManagedStyle.Maven
 

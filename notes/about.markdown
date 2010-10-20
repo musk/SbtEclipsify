@@ -3,7 +3,9 @@
 &copy; 2010 Stefan Langer and others, Element34<br />	       
 See contributors.txt for list of contributors
 
+Be sure to checkout the new [sbt eclipse integration plugin][4]
+
 [1]: http://github.com/musk/SbtEclipsify
 [2]: http://code.google.com/p/simple-build-tool
 [3]: http://www.eclipse.org
-
+[4]: http://www.assembla.com/spaces/sbt-eclipse-integration/wiki
