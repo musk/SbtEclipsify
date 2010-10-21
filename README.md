@@ -21,7 +21,7 @@ The plugin only adds the scala plugin nature to the project. The scala version u
 
 ### Building
 SbtEclipsify uses oh wonder sbt as the build tool.
-After downloading it from git start sbt and do a publish-local. This should compile all sources, run all tests and install the most recent version of the plugin to your local repo.
+After downloading it from git start sbt and do a update publish-local. This should compile all sources, run all tests and install the most recent version of the plugin to your local repo.
 From now on you can simply use `"de.element34" % "sbt-eclipsify" % "<buildversion>"` to get the plugin for your own projects.
 
 ## Supported properties
