@@ -53,6 +53,13 @@ trait Eclipsify extends Project {
   lazy val pluginProject = propertyOptional[Boolean](false)
 //  lazy val customSrcPattern = propertyOptional[RegEx]()
 
+  implicit lazy val projectNatureFormat = new Format[ProjectNature.Value] {
+    def fromString(nature: String) = ProjectNature.valueOf(nature).getOrElse(ProjectNature.Scala)
+    def toString(nature: ProjectNature.Value) = nature.toString
+  }
+
+  lazy val eclipseProjectNature = propertyOptional[ProjectNature.Value](ProjectNature.Scala)
+  
   def findProjects(log: Logger): List[Project] = {
     Nil
   }

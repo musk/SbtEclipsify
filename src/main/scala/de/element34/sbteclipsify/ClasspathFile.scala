@@ -68,12 +68,7 @@ class ClasspathFile(project: Project, log: Logger) {
     	val dependencies = basicScalaPaths.dependencyPath
     	val managedDependencies = basicScalaPaths.managedDependencyPath
 
-    	val entries = getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
-	      			  getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
-	      			  getPluginEntries ++
-	      			  List(ClasspathEntry(Container, scalaContainer),
-	      			  ClasspathEntry(Container, javaContainer),
-	      			  ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+    	val entries = buildEntries(dependencies, managedDependencies)
 
 	    lazy val classpathContent = """<?xml version="1.0" encoding="UTF-8" ?>""" +
 	    	"\n<classpath>" +
@@ -81,6 +76,22 @@ class ClasspathFile(project: Project, log: Logger) {
 	    	"\n</classpath>"
 	    createOrReplaceWith(classpathContent)
   	}
+  	
+  def buildEntries(dependencies: Path, managedDependencies: Path) = get(_.eclipseProjectNature) match {
+    case ProjectNature.Scala => 
+      getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
+	    getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
+	    getPluginEntries ++
+	    List(ClasspathEntry(Container, scalaContainer),
+	    ClasspathEntry(Container, javaContainer),
+	    ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+    case ProjectNature.Java => 
+      getJavaPaths ++ getProjectPath ++
+	    getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
+	    getPluginEntries ++
+	    List(ClasspathEntry(Container, javaContainer),
+	    ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+  }
 
 	/**
 	 * replaces the current content of the .classpath file
