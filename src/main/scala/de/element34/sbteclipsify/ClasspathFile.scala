@@ -160,12 +160,12 @@ class ClasspathFile(project: Project, log: Logger) {
 	def getJavaPaths: List[ClasspathEntry] = {
 	    import ClasspathConversions._
 		val paths = project.asInstanceOf[MavenStyleScalaPaths]
-	    val entries: List[ClasspathEntry] = if (paths.testJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.testJavaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: Nil
+		  val entries: List[ClasspathEntry] = if (paths.mainJavaSourcePath.exists) {
+	    	ClasspathEntry(Source, paths.mainJavaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: Nil
 	    } else Nil
-
-	    if (paths.mainJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.mainJavaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
+		
+	     if (paths.testJavaSourcePath.exists) {
+	    	ClasspathEntry(Source, paths.testJavaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
 	    } else entries
 	}
 
