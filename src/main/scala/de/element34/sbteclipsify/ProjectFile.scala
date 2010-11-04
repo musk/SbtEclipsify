@@ -47,6 +47,7 @@ class ProjectFile(project: Project, log: Logger) {
 	import Utils._
 
     val scalaBuilder = "org.scala-ide.sdt.core.scalabuilder"
+    val javaBuilder = "org.eclipse.jdt.core.javabuilder"
     val manifestBuilder = "org.eclipse.pde.ManifestBuilder"
     val schemaBuilder = "org.eclipse.pde.SchemaBuilder"
     val scalaNature = "org.scala-ide.sdt.core.scalanature"
@@ -61,17 +62,31 @@ class ProjectFile(project: Project, log: Logger) {
   <projects>{createSubProjects}</projects>
   <buildSpec>
     <buildCommand>
-      <name>{scalaBuilder}</name>
+      <name>{getBuilderName}</name>
     </buildCommand>
     {getPluginXml}
   </buildSpec>
   <natures>
-    <nature>{scalaNature}</nature>
-    <nature>{javaNature}</nature>
+    {getMainNatures}
     {getPluginNature}
   </natures>
 </projectDescription>
 
+  def getBuilderName = get(_.eclipseProjectNature) match {
+    case ProjectNature.Scala => scalaBuilder
+    case ProjectNature.Java => javaBuilder
+  }
+
+  def getMainNatures = get(_.eclipseProjectNature) match {
+    case ProjectNature.Scala => writeNodeSeq { _ =>
+      <nature>{scalaNature}</nature>
+      <nature>{javaNature}</nature>
+    }
+    case ProjectNature.Java => writeNodeSeq { _ =>
+      <nature>{javaNature}</nature>
+    }
+  }
+  
 	def getPluginNature: NodeSeq = writeNodeSeq(get(_.pluginProject)){ _ =>
 		<nature>{pluginNature}</nature>
 	}
