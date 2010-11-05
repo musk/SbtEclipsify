@@ -37,6 +37,8 @@ The following properties can be added to the build.properties of your project in
 
 `plugin.project` (default: false) => if set to true the project is setup to be a plugin project (osgi projects are handled as plugin projects in eclipse). This results in the plugin dependencies container being added to .classpath and the manifest and schema builder being added to .project.
 
+`eclipse.project.nature` (default: scala) => the nature of the project can be either "java" or "scala". Unknown values are converted to "scala" 
+
 ## Using the Plugin in your own project
 You need to create a plugin definition in your sbt project.
 The plugin definition can be any Scala class that extends PluginDefinition and is located in the plugins directory in the projects subfolder of your sbt project.
@@ -52,7 +54,7 @@ next create a file name MySbtProjectPlugins.scala and add the following text to 
      import sbt._
 
      class MySbtProjectPlugins(info: ProjectInfo) extends PluginDefinition(info) {
-      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.6.0"
+      	   lazy val eclipse = "de.element34" % "sbt-eclipsify" % "0.7.0"
      }
 
 This will enable your project to get the plugin in order to use it you need to add it to your project defintion.
@@ -69,15 +71,12 @@ After reloading the project you should have a new action named "eclipse" which w
 
 Now all you need to do is import the Project into your Eclipse workspace as an existing Project and everything should work.
 
-__Note__: The old trait SbtEclipsifyPlugin has been removed from this version.
-
 ## Known Issues
 Crossbuilds are not supported officially but they might work (testing still pending).
 
 ## FUTURE
 * Better documentation (as always :) )
 * Add ability to fine tune generation
-* Support for java only projects? Does this even make sense when using sbt?
 * Add ability to include directories besides those in test and main
 * Add generation of subprojects like with eclipse:eclipse from maven
 * Improve the test coverage (still need to figure out how to mock the sbt parts)

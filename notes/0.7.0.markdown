@@ -1,0 +1,6 @@
+### Fixed paths bug and added pure java project support ###
+
+ * Added patch from asflierl to correct java classpath generation
+ * Added patch from asflierl to support pure Java projects
+
+Thank you asflierl for the great work
