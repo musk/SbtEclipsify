@@ -48,11 +48,18 @@ class ProjectFile(project: Project, log: Logger) {
 
     val scalaBuilder = "org.scala-ide.sdt.core.scalabuilder"
     val javaBuilder = "org.eclipse.jdt.core.javabuilder"
+  
+    val androidBuilder = List("org.eclipse.jdt.core.javabuilder",
+          "com.android.ide.eclipse.adt.ResourceManagerBuilder",   
+          "com.android.ide.eclipse.adt.PreCompilerBuilder",   
+          "com.android.ide.eclipse.adt.ApkBuilder")
+  
     val manifestBuilder = "org.eclipse.pde.ManifestBuilder"
     val schemaBuilder = "org.eclipse.pde.SchemaBuilder"
     val scalaNature = "org.scala-ide.sdt.core.scalanature"
     val javaNature = "org.eclipse.jdt.core.javanature"
     val pluginNature = "org.eclipse.pde.PluginNature"
+    val androidNature = "com.android.ide.eclipse.adt.AndroidNature"
 
     lazy val projectFile: File = project.info.projectPath / ".project" asFile
     lazy val projectContent = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
@@ -61,9 +68,8 @@ class ProjectFile(project: Project, log: Logger) {
   <comment>{getProjectDescription}</comment>
   <projects>{createSubProjects}</projects>
   <buildSpec>
-    <buildCommand>
-      <name>{getBuilderName}</name>
-    </buildCommand>
+  
+  {getBuilderName}
     {getPluginXml}
   </buildSpec>
   <natures>
@@ -73,8 +79,16 @@ class ProjectFile(project: Project, log: Logger) {
 </projectDescription>
 
   def getBuilderName = get(_.eclipseProjectNature) match {
-    case ProjectNature.Scala => scalaBuilder
-    case ProjectNature.Java => javaBuilder
+    case ProjectNature.Scala => writeNodeSeq { _ => 
+      <buildCommand><name>scalaBuilder</name></buildCommand>
+    }
+    case ProjectNature.Java => writeNodeSeq { _ => 
+      <buildCommand><name>javaBuilder</name></buildCommand>
+    } 
+    case ProjectNature.Android => 
+    androidBuilder.map { s => <buildCommand><name>{s}</name></buildCommand> }    
+      
+      
   }
 
   def getMainNatures = get(_.eclipseProjectNature) match {
@@ -84,6 +98,10 @@ class ProjectFile(project: Project, log: Logger) {
     }
     case ProjectNature.Java => writeNodeSeq { _ =>
       <nature>{javaNature}</nature>
+    }
+    case ProjectNature.Android => writeNodeSeq { _ =>
+      <nature>{javaNature}</nature>
+      <nature>{androidNature}</nature>
     }
   }
   
