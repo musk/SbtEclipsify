@@ -33,6 +33,7 @@ import sbt._
 
 import java.io.File
 import java.nio.charset.Charset._
+import collection.mutable.ListBuffer
 
 /** Implicit definitions for converting strings to paths and viceversa */
 object ClasspathConversions {
@@ -171,13 +172,20 @@ class ClasspathFile(project: Project, log: Logger) {
 	def getJavaPaths: List[ClasspathEntry] = {
 	    import ClasspathConversions._
 		val paths = project.asInstanceOf[MavenStyleScalaPaths]
-		  val entries: List[ClasspathEntry] = if (paths.mainJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.mainJavaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: Nil
-	    } else Nil
-		
-	     if (paths.testJavaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.testJavaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
-	    } else entries
+    val entries = new ListBuffer[ClasspathEntry]()
+    if (paths.mainJavaSourcePath.exists) {
+      entries + ClasspathEntry(Source, paths.mainJavaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java")))
+    }
+    if (paths.mainResourcesPath.exists) {
+      entries + ClasspathEntry(Source, paths.mainResourcesPath.projectRelativePath)
+    }
+    if (paths.testJavaSourcePath.exists) {
+      entries + ClasspathEntry(Source, paths.testJavaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java")))
+    }
+    if (paths.testResourcesPath.exists) {
+      entries + ClasspathEntry(Source, paths.testResourcesPath.projectRelativePath, paths.testCompilePath.projectRelativePath, EmptyFilter)
+    }
+    return entries.toList
 	}
 
 
