@@ -64,11 +64,7 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>Some(error)</code>, where error designates the error message to display, when an error occures else returns <code>None</code>
      */
     def writeFile: Option[String] = {
-    	val basicScalaPaths = project.asInstanceOf[BasicScalaPaths]
-    	val dependencies = basicScalaPaths.dependencyPath
-    	val managedDependencies = basicScalaPaths.managedDependencyPath
-
-    	val entries = buildEntries(dependencies, managedDependencies)
+    	val entries = buildEntries()
 
 	    lazy val classpathContent = """<?xml version="1.0" encoding="UTF-8" ?>""" +
 	    	"\n<classpath>" +
@@ -76,23 +72,46 @@ class ClasspathFile(project: Project, log: Logger) {
 	    	"\n</classpath>"
 	    createOrReplaceWith(classpathContent)
   	}
-  	
-  def buildEntries(dependencies: Path, managedDependencies: Path) = get(_.eclipseProjectNature) match {
-    case ProjectNature.Scala => 
-      getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
-	    getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
-	    getPluginEntries ++
-	    List(ClasspathEntry(Container, scalaContainer),
-	    ClasspathEntry(Container, javaContainer),
-	    ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
-    case ProjectNature.Java => 
-      getJavaPaths ++ getProjectPath ++
-	    getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
-	    getPluginEntries ++
-	    List(ClasspathEntry(Container, javaContainer),
-	    ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+
+  def classpaths() : List[ClasspathEntry] = {
+    project match {
+      case p : BasicScalaProject => {
+        val pf = p.unmanagedClasspath +++ p.managedClasspath(p.config("compile")) +++ p.managedClasspath(p.config("test")) +++ p.jarsOfProjectDependencies  
+        pf.getPaths.toList.map{ x =>
+          ClasspathEntry(Library, x)
+        }
+      }
+      case p : UnmanagedClasspathProject => {
+        p.unmanagedClasspath.getPaths.toList.map{ x =>
+          ClasspathEntry(Library, x)
+        }
+      }
+      case p : BasicScalaPaths => {
+      	val dependencies = p.dependencyPath
+        getDependencyEntries(dependencies)
+      }
+      case _ => Nil
+    }
   }
 
+  def buildEntries() = {
+    get(_.eclipseProjectNature) match {
+      case ProjectNature.Scala => 
+        getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
+        classpaths() ++
+        getPluginEntries ++
+        List(ClasspathEntry(Container, scalaContainer),
+        ClasspathEntry(Container, javaContainer),
+        ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+      case ProjectNature.Java => 
+        getJavaPaths ++ getProjectPath ++
+        classpaths() ++
+        getPluginEntries ++
+        List(ClasspathEntry(Container, javaContainer),
+        ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+    }
+  }
+  
 	/**
 	 * replaces the current content of the .classpath file
 	 * @return <code>Some(error)</code> when error occurs else returns <code>None</code>
