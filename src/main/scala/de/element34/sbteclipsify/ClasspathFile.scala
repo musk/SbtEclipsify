@@ -76,7 +76,13 @@ class ClasspathFile(project: Project, log: Logger) {
   def classpaths() : List[ClasspathEntry] = {
     project match {
       case p : BasicScalaProject => {
-        val pf = p.unmanagedClasspath +++ p.managedClasspath(p.config("compile")) +++ p.managedClasspath(p.config("test")) +++ p.jarsOfProjectDependencies  
+        val pf = (
+          p.unmanagedClasspath
+          +++ p.managedClasspath(p.config("compile"))
+          +++ p.managedClasspath(p.config("test"))
+          +++ p.managedClasspath(p.config("runtime")) // to be able to do "Run As ..."
+          +++ p.jarsOfProjectDependencies
+        )
         pf.getPaths.toList.map{ x =>
           ClasspathEntry(Library, x)
         }
@@ -100,6 +106,7 @@ class ClasspathFile(project: Project, log: Logger) {
     get(_.eclipseProjectNature) match {
       case ProjectNature.Scala => 
         getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
+        getResourcesPaths ++
         getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++        classpaths() ++
         classpaths() ++
         getPluginEntries ++
@@ -108,6 +115,7 @@ class ClasspathFile(project: Project, log: Logger) {
         ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
       case ProjectNature.Java => 
         getJavaPaths ++ getProjectPath ++
+        getResourcesPaths ++
         getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++        classpaths() ++
         classpaths() ++
         getPluginEntries ++
@@ -222,7 +230,7 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>List[ClasspathEntry]</code> for main java source and main java test source path
      */
 	def getJavaPaths: List[ClasspathEntry] = {
-	    import ClasspathConversions._
+	  import ClasspathConversions._
 		val paths = project.asInstanceOf[MavenStyleScalaPaths]
 		  val entries: List[ClasspathEntry] = if (paths.mainJavaSourcePath.exists) {
 	    	ClasspathEntry(Source, paths.mainJavaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: Nil
@@ -231,7 +239,22 @@ class ClasspathFile(project: Project, log: Logger) {
 	     if (paths.testJavaSourcePath.exists) {
 	    	ClasspathEntry(Source, paths.testJavaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java"))) :: entries
 	    } else entries
-	}
+  }
+
+  /**
+   * @return <code>List[ClasspathEntry]</code> for main java source and main java test source path
+   */
+	def getResourcesPaths: List[ClasspathEntry] = {
+		val paths = project.asInstanceOf[MavenStyleScalaPaths]
+    var entries : List[ClasspathEntry] = Nil
+    if (paths.mainResourcesPath.exists) {
+      entries = ClasspathEntry(Source, paths.mainResourcesPath.projectRelativePath) :: entries
+    }
+    if (paths.testResourcesPath.exists) {
+      entries = ClasspathEntry(Source, paths.testResourcesPath.projectRelativePath, paths.testCompilePath.projectRelativePath, EmptyFilter) :: entries
+    }
+    entries
+  }
 
 
 	/**
