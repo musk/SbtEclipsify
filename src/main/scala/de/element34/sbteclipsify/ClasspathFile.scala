@@ -103,7 +103,7 @@ class ClasspathFile(project: Project, log: Logger) {
   def buildEntries() = {
     val referencedProjects = project.info.dependencies.toList
 
-    get(_.eclipseProjectNature) match {
+    val l = get(_.eclipseProjectNature) match {
       case ProjectNature.Scala => 
         getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
         getResourcesPaths ++
@@ -122,6 +122,7 @@ class ClasspathFile(project: Project, log: Logger) {
         List(ClasspathEntry(Container, javaContainer),
         ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
     }
+    l.removeDuplicates
   }
   
 	/**
