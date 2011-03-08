@@ -1,0 +1,6 @@
+### JavaResources and Android support 
+
+* Integrated patch from Staale Undheim: Added inclusion of resource folders for java nature
+* Integrated patch from Carl-Gustaf Harroch: Added Android nature for project generation
+
+Thank you for the great work.
