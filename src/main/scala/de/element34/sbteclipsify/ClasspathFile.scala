@@ -92,6 +92,12 @@ class ClasspathFile(project: Project, log: Logger) {
 	    getPluginEntries ++
 	    List(ClasspathEntry(Container, javaContainer),
 	    ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+    case ProjectNature.Android => 
+      getJavaPaths ++ getProjectPath ++
+	    getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
+	    getPluginEntries ++
+	    List(ClasspathEntry(Container, javaContainer),
+	    ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
   }
 
 	/**
