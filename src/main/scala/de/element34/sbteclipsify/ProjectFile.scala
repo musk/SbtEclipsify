@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010, Stefan Langer
+ * Copyright (c) 2010, Stefan Langer and others
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -86,7 +86,7 @@ class ProjectFile(project: Project, log: Logger) {
       <buildCommand><name>javaBuilder</name></buildCommand>
     } 
     case ProjectNature.Android => 
-    androidBuilder.map { s => <buildCommand><name>{s}</name></buildCommand> }    
+     {exit()};androidBuilder.map { s => <buildCommand><name>{s}</name></buildCommand> }    
       
       
   }
