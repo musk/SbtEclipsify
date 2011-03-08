@@ -44,8 +44,9 @@ trait Eclipsify extends Project {
       case ret @ Some(_) => ret
     }
   }
-
-  lazy val eclipseName = propertyOptional[String](projectName.value)
+ 
+  lazy val eclipseName = Some(propertyOptional[String](projectName.value).value)
+  //lazy val eclipseName = propertyOptional[String](projectName.value)
   lazy val projectDescription = propertyOptional[String](projectName.value + " " + projectVersion.value)
   lazy val includeProject = propertyOptional[Boolean](false)
   lazy val includePlugin = propertyOptional[Boolean](false)

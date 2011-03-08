@@ -46,7 +46,9 @@ object Utils {
 		else NodeSeq.Empty
 	}
 
-	def get[T](body: Eclipsify => Environment#Property[T])(implicit project: Project): T = {
+	def get[T](body: Eclipsify => Option[T])(implicit project: Project): Option[T] = body(toEclipsify(project))
+
+  	def get[T](body: Eclipsify => Environment#Property[T])(implicit project: Project): T = {
 		body(toEclipsify(project)).value
 	}
 }
