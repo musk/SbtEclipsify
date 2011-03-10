@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010, Stefan Langer
+ * Copyright (c) 2010, Stefan Langer and others
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,14 +41,14 @@ class ClasspathFileTest extends FlatSpec with ShouldMatchers {
 
     val entry = ClasspathEntry(Variable, "src/main/scala")
     val expected = """<classpathentry kind="var" path="src/main/scala" />"""
-    entry.mkString should be (expected)
+    entry.mkString should be(expected)
 
   }
 
   it should "produce srcpath entries" in {
     val entry = ClasspathEntry(Variable, "target/", "src/main/scala")
     val expected = """<classpathentry kind="var" path="target/" sourcepath="src/main/scala" />"""
-    entry.mkString should be (expected)
+    entry.mkString should be(expected)
   }
 
   it should "produce include and exlude filter entries" in {
@@ -60,20 +60,20 @@ class ClasspathFileTest extends FlatSpec with ShouldMatchers {
     val exExpected = """<classpathentry kind="var" path="target/" excluding="**/*.scala" />"""
     val incExExpected = """<classpathentry kind="var" path="target/" including="**/*.scala" excluding="**/*.java" />"""
 
-    incEntry.mkString should be (incExpected)
-    exEntry.mkString should be (exExpected)
-    incExEntry.mkString should be (incExExpected)
+    incEntry.mkString should be(incExpected)
+    exEntry.mkString should be(exExpected)
+    incExEntry.mkString should be(incExExpected)
   }
 
   it should "produce container entries" in {
     val conEntry = ClasspathEntry(Container, "target/")
     val expected = """<classpathentry kind="con" path="target/" />"""
-    conEntry.mkString should be (expected)
+    conEntry.mkString should be(expected)
   }
 
   it should "produce output entries" in {
     val outEntry = ClasspathEntry(Output, "target/")
     val expected = """<classpathentry kind="output" path="target/" />"""
-    outEntry.mkString should be (expected)
+    outEntry.mkString should be(expected)
   }
 }

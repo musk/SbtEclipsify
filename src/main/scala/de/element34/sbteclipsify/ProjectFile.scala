@@ -44,16 +44,16 @@ class ProjectFile(project: Project, log: Logger) {
    * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>
    */
   def writeFile: Option[String] = {
-	import Utils._
+    import Utils._
 
     val scalaBuilder = "org.scala-ide.sdt.core.scalabuilder"
     val javaBuilder = "org.eclipse.jdt.core.javabuilder"
-  
+
     val androidBuilder = List("org.eclipse.jdt.core.javabuilder",
-          "com.android.ide.eclipse.adt.ResourceManagerBuilder",   
-          "com.android.ide.eclipse.adt.PreCompilerBuilder",   
-          "com.android.ide.eclipse.adt.ApkBuilder")
-  
+      "com.android.ide.eclipse.adt.ResourceManagerBuilder",
+      "com.android.ide.eclipse.adt.PreCompilerBuilder",
+      "com.android.ide.eclipse.adt.ApkBuilder")
+
     val manifestBuilder = "org.eclipse.pde.ManifestBuilder"
     val schemaBuilder = "org.eclipse.pde.SchemaBuilder"
     val scalaNature = "org.scala-ide.sdt.core.scalanature"
@@ -63,63 +63,58 @@ class ProjectFile(project: Project, log: Logger) {
 
     lazy val projectFile: File = project.info.projectPath / ".project" asFile
     lazy val projectContent = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
-<projectDescription>
-  <name>{getProjectName}</name>
-  <comment>{getProjectDescription}</comment>
-  <projects>{createSubProjects}</projects>
-  <buildSpec>
-  
-  {getBuilderName}
-    {getPluginXml}
-  </buildSpec>
-  <natures>
-    {getMainNatures}
-    {getPluginNature}
-  </natures>
-</projectDescription>
+       <projectDescription>
+         <name>{ project.projectName }</name>
+         <comment>{ project.projectDescription }</comment>
+         <projects>{ createSubProjects }</projects>
+         <buildSpec>
+           { getBuilderName }
+           { getPluginXml }
+         </buildSpec>
+         <natures>
+           { getMainNatures }
+           { getPluginNature }
+         </natures>
+       </projectDescription>
 
-  def getBuilderName = get(_.eclipseProjectNature) match {
-    case ProjectNature.Scala => writeNodeSeq { _ => 
-      <buildCommand><name>scalaBuilder</name></buildCommand>
-    }
-    case ProjectNature.Java => writeNodeSeq { _ => 
-      <buildCommand><name>javaBuilder</name></buildCommand>
-    } 
-    case ProjectNature.Android => 
-     {exit()};androidBuilder.map { s => <buildCommand><name>{s}</name></buildCommand> }    
-      
-      
-  }
+    def getBuilderName = project.eclipseProjectNature match {
+      case ProjectNature.Scala => writeNodeSeq { _ =>
+        <buildCommand><name>scalaBuilder</name></buildCommand>
+      }
+      case ProjectNature.Java => writeNodeSeq { _ =>
+        <buildCommand><name>javaBuilder</name></buildCommand>
+      }
+      case ProjectNature.Android =>
+        { exit() }; androidBuilder.map { s => <buildCommand><name>{ s }</name></buildCommand> }
 
-  def getMainNatures = get(_.eclipseProjectNature) match {
-    case ProjectNature.Scala => writeNodeSeq { _ =>
-      <nature>{scalaNature}</nature>
-      <nature>{javaNature}</nature>
     }
-    case ProjectNature.Java => writeNodeSeq { _ =>
-      <nature>{javaNature}</nature>
-    }
-    case ProjectNature.Android => writeNodeSeq { _ =>
-      <nature>{javaNature}</nature>
-      <nature>{androidNature}</nature>
-    }
-  }
-  
-	def getPluginNature: NodeSeq = writeNodeSeq(get(_.pluginProject)){ _ =>
-		<nature>{pluginNature}</nature>
-	}
 
-	def getPluginXml: NodeSeq = writeNodeSeq(get(_.pluginProject)){ _ =>
-		<buildCommand>
-		  <name>{manifestBuilder}</name>
-		</buildCommand>
-		<buildCommand>
-		  <name>{schemaBuilder}</name>
-		</buildCommand>
-	}
+    def getMainNatures = project.eclipseProjectNature match {
+      case ProjectNature.Scala => writeNodeSeq { _ =>
+        <nature>{ scalaNature }</nature>
+         <nature>{ javaNature }</nature>
+      }
+      case ProjectNature.Java => writeNodeSeq { _ =>
+        <nature>{ javaNature }</nature>
+      }
+      case ProjectNature.Android => writeNodeSeq { _ =>
+        <nature>{ javaNature }</nature>
+         <nature>{ androidNature }</nature>
+      }
+    }
 
-    def getProjectName: String = get(_.eclipseName)
-    def getProjectDescription: String =  get(_.projectDescription)
+    def getPluginNature: NodeSeq = writeNodeSeq(project.pluginProject) { _ =>
+      <nature>{ pluginNature }</nature>
+    }
+
+    def getPluginXml: NodeSeq = writeNodeSeq(project.pluginProject) { _ =>
+      <buildCommand>
+        <name>{ manifestBuilder }</name>
+      </buildCommand>
+       <buildCommand>
+         <name>{ schemaBuilder }</name>
+       </buildCommand>
+    }
 
     implicit def sbtProject: Project = project
     /**
@@ -128,12 +123,12 @@ class ProjectFile(project: Project, log: Logger) {
     def createSubProjects = ""
 
     FileUtilities.touch(projectFile, log) match {
-    	case Some(error) =>
-    		Some("Unable to write project file " + projectFile+ ": " + error)
-    	case None =>
-    		FileUtilities.write(projectFile, projectContent, forName("UTF-8"), log)
-    	}
-   	}
+      case Some(error) =>
+        Some("Unable to write project file " + projectFile + ": " + error)
+      case None =>
+        FileUtilities.write(projectFile, projectContent, forName("UTF-8"), log)
+    }
+  }
 }
 
 /**

@@ -41,26 +41,23 @@ trait Eclipsify extends Project {
     log.info("Creating eclipse project...")
     writeProjectFile(log) match {
       case None => writeClasspathFile(log)
-      case ret @ Some(_) => ret
+      case ret@Some(_) => ret
     }
   }
- 
-  lazy val eclipseName = Some(propertyOptional[String](projectName.value).value)
-  //lazy val eclipseName = propertyOptional[String](projectName.value)
-  lazy val projectDescription = propertyOptional[String](projectName.value + " " + projectVersion.value)
-  lazy val includeProject = propertyOptional[Boolean](false)
-  lazy val includePlugin = propertyOptional[Boolean](false)
-  lazy val sbtDependency = propertyOptional[Boolean](false)
-  lazy val pluginProject = propertyOptional[Boolean](false)
-//  lazy val customSrcPattern = propertyOptional[RegEx]()
 
   implicit lazy val projectNatureFormat = new Format[ProjectNature.Value] {
     def fromString(nature: String) = ProjectNature.valueOf(nature).getOrElse(ProjectNature.Scala)
     def toString(nature: ProjectNature.Value) = nature.toString
   }
 
-  lazy val eclipseProjectNature = propertyOptional[ProjectNature.Value](ProjectNature.Scala)
-  
+  def eclipseName = propertyOptional[String](projectName.value).value
+  def projectDescription = propertyOptional[String](projectName.value + " " + projectVersion.value).value
+  def includeProject = propertyOptional[Boolean](false).value
+  def includePlugin = propertyOptional[Boolean](false).value
+  def sbtDependency = propertyOptional[Boolean](false).value
+  def pluginProject = propertyOptional[Boolean](false).value
+  def eclipseProjectNature = propertyOptional[ProjectNature.Value](ProjectNature.Scala).value
+
   def findProjects(log: Logger): List[Project] = {
     Nil
   }

@@ -37,10 +37,9 @@ import collection.mutable.ListBuffer
 
 /** Implicit definitions for converting strings to paths and viceversa */
 object ClasspathConversions {
-	implicit def pathToString(path: Path): String = path.toString
-	implicit def pathToOptionString(path: Path): Option[String] = Some(path.toString)
+  implicit def pathToString(path: Path): String = path.toString
+  implicit def pathToOptionString(path: Path): Option[String] = Some(path.toString)
 }
-
 
 /**
  * Gathers the structural information for a .classpath file.
@@ -48,136 +47,136 @@ object ClasspathConversions {
  * @param log The logger from the sbt project
  */
 class ClasspathFile(project: Project, log: Logger) {
-	import ClasspathConversions._
-	import Utils._
+  import ClasspathConversions._
+  import Utils._
 
-    lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
-    val srcPatterns: List[String] = "-sources.jar" :: "-src.jar" :: Nil
+  lazy val classpathFile: File = project.info.projectPath / ".classpath" asFile
+  val srcPatterns: List[String] = "-sources.jar" :: "-src.jar" :: Nil
 
-    val scalaContainer = "org.scala-ide.sdt.launching.SCALA_CONTAINER"
-    val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
-    val depPluginsContainer = "org.eclipse.pde.core.requiredPlugins"
+  val scalaContainer = "org.scala-ide.sdt.launching.SCALA_CONTAINER"
+  val javaContainer = "org.eclipse.jdt.launching.JRE_CONTAINER"
+  val depPluginsContainer = "org.eclipse.pde.core.requiredPlugins"
 
-    implicit val p = project
+  implicit val p = project
 
-    /**
-     * writes the .classpath file to the project root
-     * @return <code>Some(error)</code>, where error designates the error message to display, when an error occures else returns <code>None</code>
-     */
-    def writeFile: Option[String] = {
-    	val basicScalaPaths = project.asInstanceOf[BasicScalaPaths]
-    	val dependencies = basicScalaPaths.dependencyPath
-    	val managedDependencies = basicScalaPaths.managedDependencyPath
+  /**
+   * writes the .classpath file to the project root
+   * @return <code>Some(error)</code>, where error designates the error message to display, when an error occures else returns <code>None</code>
+   */
+  def writeFile: Option[String] = {
+    val basicScalaPaths = project.asInstanceOf[BasicScalaPaths]
+    val dependencies = basicScalaPaths.dependencyPath
+    val managedDependencies = basicScalaPaths.managedDependencyPath
 
-    	val entries = buildEntries(dependencies, managedDependencies)
+    val entries = buildEntries(dependencies, managedDependencies)
 
-	    lazy val classpathContent = """<?xml version="1.0" encoding="UTF-8" ?>""" +
-	    	"\n<classpath>" +
-	    	("" /: entries)(_ + _.mkString("\n")) +
-	    	"\n</classpath>"
-	    createOrReplaceWith(classpathContent)
-  	}
-  	
-  def buildEntries(dependencies: Path, managedDependencies: Path) = get(_.eclipseProjectNature) match {
-    case ProjectNature.Scala => 
-      getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
-	    getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
-	    getPluginEntries ++
-	    List(ClasspathEntry(Container, scalaContainer),
-	    ClasspathEntry(Container, javaContainer),
-	    ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
-    case ProjectNature.Java => 
-      getJavaPaths ++ getProjectPath ++
-	    getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
-	    getPluginEntries ++
-	    List(ClasspathEntry(Container, javaContainer),
-	    ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
-    case ProjectNature.Android => 
-      getJavaPaths ++ getProjectPath ++
-	    getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
-	    getPluginEntries ++
-	    List(ClasspathEntry(Container, javaContainer),
-	    ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+    lazy val classpathContent = """<?xml version="1.0" encoding="UTF-8" ?>""" +
+      "\n<classpath>" +
+      ("" /: entries)(_ + _.mkString("\n")) +
+      "\n</classpath>"
+    createOrReplaceWith(classpathContent)
   }
 
-	/**
-	 * replaces the current content of the .classpath file
-	 * @return <code>Some(error)</code> when error occurs else returns <code>None</code>
-     */
-	def createOrReplaceWith(content: String): Option[String]= {
-		FileUtilities.touch(classpathFile, log) match {
-			case Some(error) =>
-				Some("Unable to write classpath file " + classpathFile + ": " + error)
-			case None =>
-				FileUtilities.write(classpathFile, content, forName("UTF-8"), log)
-		}
-	}
+  def buildEntries(dependencies: Path, managedDependencies: Path) = project.eclipseProjectNature match {
+    case ProjectNature.Scala =>
+      getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
+        getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
+        getPluginEntries ++
+        List(ClasspathEntry(Container, scalaContainer),
+          ClasspathEntry(Container, javaContainer),
+          ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+    case ProjectNature.Java =>
+      getJavaPaths ++ getProjectPath ++
+        getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
+        getPluginEntries ++
+        List(ClasspathEntry(Container, javaContainer),
+          ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+    case ProjectNature.Android =>
+      getJavaPaths ++ getProjectPath ++
+        getDependencyEntries(dependencies) ++ getDependencyEntries(managedDependencies) ++
+        getPluginEntries ++
+        List(ClasspathEntry(Container, javaContainer),
+          ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
+  }
 
-	/**
-     * @return <code>List[ClasspathEntry]</code> containing entries for each jar contained in path.
-     */
-	def getDependencyEntries(basePath: Path): List[ClasspathEntry] = {
-		import Path._
+  /**
+   * replaces the current content of the .classpath file
+   * @return <code>Some(error)</code> when error occurs else returns <code>None</code>
+   */
+  def createOrReplaceWith(content: String): Option[String] = {
+    FileUtilities.touch(classpathFile, log) match {
+      case Some(error) =>
+        Some("Unable to write classpath file " + classpathFile + ": " + error)
+      case None =>
+        FileUtilities.write(classpathFile, content, forName("UTF-8"), log)
+    }
+  }
 
-		val exclude: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => GlobFilter("*" + str))
-		val baseFinder: PathFinder = basePath ** GlobFilter("*.jar")
-		val finder: PathFinder = exclude.foldLeft(baseFinder)(_ --- _)
+  /**
+   * @return <code>List[ClasspathEntry]</code> containing entries for each jar contained in path.
+   */
+  def getDependencyEntries(basePath: Path): List[ClasspathEntry] = {
+    import Path._
 
-		val jarPaths: List[Path] = finder.get.flatMap(Path.relativize(project.info.projectPath, _)).toList
-		jarPaths.map(path => ClasspathEntry(Library, path.relativePath, findSource(basePath, path)))
-	}
+    val exclude: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => GlobFilter("*" + str))
+    val baseFinder: PathFinder = basePath ** GlobFilter("*.jar")
+    val finder: PathFinder = exclude.foldLeft(baseFinder)(_ --- _)
 
-	private def findSource(basePath: Path, jar: Path): Option[String] = {
-		import sbt.Project._
-		val JarEx = """.*/([^/]*)\.jar""".r
-		jar.toString match {
-			case JarEx(name) => {
-				val finders: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => new ExactFilter(name + str))
-				val seq = finders.foldLeft(Path.emptyPathFinder)(_ +++ _).get.toSeq
-				seq.firstOption.map(_.toString)
-			}
-			case _ => None
-		}
-	}
+    val jarPaths: List[Path] = finder.get.flatMap(Path.relativize(project.info.projectPath, _)).toList
+    jarPaths.map(path => ClasspathEntry(Library, path.relativePath, findSource(basePath, path)))
+  }
 
-	private def constructPathFinder(basePath: Path, list: List[String], conv: String => FileFilter): List[PathFinder] = {
-		list.map(str => basePath ** conv(str))
-	}
+  private def findSource(basePath: Path, jar: Path): Option[String] = {
+    import sbt.Project._
+    val JarEx = """.*/([^/]*)\.jar""".r
+    jar.toString match {
+      case JarEx(name) => {
+        val finders: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => new ExactFilter(name + str))
+        val seq = finders.foldLeft(Path.emptyPathFinder)(_ +++ _).get.toSeq
+        seq.firstOption.map(_.toString)
+      }
+      case _ => None
+    }
+  }
 
-	/**
-     * @return <code>List[ClasspathEntry]</code> with entries for the project build directory and the project plugin directory
-     */
-  	def getProjectPath: List[ClasspathEntry] = {
-	    val entries: List[ClasspathEntry] = if(get(_.includeProject) && project.info.builderProjectPath.exists) {
-	    	ClasspathEntry(Source, project.info.builderProjectPath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
-	    } else Nil
+  private def constructPathFinder(basePath: Path, list: List[String], conv: String => FileFilter): List[PathFinder] = {
+    list.map(str => basePath ** conv(str))
+  }
 
-	    if(get(_.includePlugin) && project.info.pluginsPath.exists) {
-	    	ClasspathEntry(Source, project.info.pluginsPath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
-	    } else entries
-	}
+  /**
+   * @return <code>List[ClasspathEntry]</code> with entries for the project build directory and the project plugin directory
+   */
+  def getProjectPath: List[ClasspathEntry] = {
+    val entries: List[ClasspathEntry] = if (project.includeProject && project.info.builderProjectPath.exists) {
+      ClasspathEntry(Source, project.info.builderProjectPath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
+    } else Nil
 
-    /**
-     * @return <code>List[ClasspathEntry]</code> with entries for the main source and main test source path.
-     */
-	def getScalaPaths: List[ClasspathEntry] = {
-		import ClasspathConversions._
-	    val paths = project.asInstanceOf[MavenStyleScalaPaths]
-	    val entries: List[ClasspathEntry] = if(paths.mainScalaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.mainScalaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
-	    } else Nil
+    if (project.includePlugin && project.info.pluginsPath.exists) {
+      ClasspathEntry(Source, project.info.pluginsPath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
+    } else entries
+  }
 
-	    if(paths.testScalaSourcePath.exists) {
-	    	ClasspathEntry(Source, paths.testScalaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
-	    } else entries
-	}
+  /**
+   * @return <code>List[ClasspathEntry]</code> with entries for the main source and main test source path.
+   */
+  def getScalaPaths: List[ClasspathEntry] = {
+    import ClasspathConversions._
+    val paths = project.asInstanceOf[MavenStyleScalaPaths]
+    val entries: List[ClasspathEntry] = if (paths.mainScalaSourcePath.exists) {
+      ClasspathEntry(Source, paths.mainScalaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.scala"))) :: Nil
+    } else Nil
 
-    /**
-     * @return <code>List[ClasspathEntry]</code> for main java source and main java test source path
-     */
-	def getJavaPaths: List[ClasspathEntry] = {
-	    import ClasspathConversions._
-		val paths = project.asInstanceOf[MavenStyleScalaPaths]
+    if (paths.testScalaSourcePath.exists) {
+      ClasspathEntry(Source, paths.testScalaSourcePath.projectRelativePath, paths.testCompilePath.projectRelativePath, FilterChain(IncludeFilter("**/*.scala"))) :: entries
+    } else entries
+  }
+
+  /**
+   * @return <code>List[ClasspathEntry]</code> for main java source and main java test source path
+   */
+  def getJavaPaths: List[ClasspathEntry] = {
+    import ClasspathConversions._
+    val paths = project.asInstanceOf[MavenStyleScalaPaths]
     val entries = new ListBuffer[ClasspathEntry]()
     if (paths.mainJavaSourcePath.exists) {
       entries + ClasspathEntry(Source, paths.mainJavaSourcePath.projectRelativePath, FilterChain(IncludeFilter("**/*.java")))
@@ -192,32 +191,30 @@ class ClasspathFile(project: Project, log: Logger) {
       entries + ClasspathEntry(Source, paths.testResourcesPath.projectRelativePath, paths.testCompilePath.projectRelativePath, EmptyFilter)
     }
     return entries.toList
-	}
+  }
 
+  /**
+   * @return <code>List[ClasspathEntry]</code> for sbt jar
+   */
+  def getSbtJarForSbtProject: List[ClasspathEntry] = {
+    //val plugin = project.asInstanceOf[Eclipsify]
+    if (project.sbtDependency || project.includeProject || project.includePlugin) {
+      val scalaVersion = project.buildScalaVersion
+      val sbtVersion = project.sbtVersion.get.get
+      // TODO how to handle cross builds?
+      val sbtJar = "sbt_" + scalaVersion + "-" + sbtVersion + ".jar"
+      val foundPaths = project.info.projectPath / "project" / "boot" ** new ExactFilter(sbtJar) get
+      val entries: List[ClasspathEntry] = foundPaths.map(ClasspathEntry(Library, _)).toList
+      entries
+    } else Nil
+  }
 
-	/**
-     * @return <code>List[ClasspathEntry]</code> for sbt jar
-     */
-	def getSbtJarForSbtProject: List[ClasspathEntry] = {
-	    val plugin = project.asInstanceOf[Eclipsify]
-	    if(plugin.sbtDependency.value || plugin.includeProject.value || plugin.includePlugin.value) {
-			val scalaVersion = project.buildScalaVersion
-		    val sbtVersion = project.sbtVersion.get.get
-		    // TODO how to handle cross builds?
-		    val sbtJar = "sbt_" + scalaVersion + "-" + sbtVersion + ".jar"
-		    val foundPaths = project.info.projectPath / "project" / "boot" ** new ExactFilter(sbtJar) get
-		    val entries: List[ClasspathEntry] = foundPaths.map(ClasspathEntry(Library, _)).toList
-		    entries
-		}
-	    else Nil
-	}
-
-	def getPluginEntries: List[ClasspathEntry] = {
-		val plugin = project.asInstanceOf[Eclipsify]
-		if(plugin.pluginProject.value)
-			List(ClasspathEntry(Container, depPluginsContainer))
-		else Nil
-	}
+  def getPluginEntries: List[ClasspathEntry] = {
+    //		val plugin = project.asInstanceOf[Eclipsify]
+    if (project.pluginProject)
+      List(ClasspathEntry(Container, depPluginsContainer))
+    else Nil
+  }
 }
 
 /**
@@ -225,6 +222,6 @@ class ClasspathFile(project: Project, log: Logger) {
  */
 object ClasspathFile {
 
-	def apply(project: Project, log: Logger) = new ClasspathFile(project, log)
+  def apply(project: Project, log: Logger) = new ClasspathFile(project, log)
 }
 

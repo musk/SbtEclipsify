@@ -59,26 +59,23 @@ case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], out
    */
   def mkString(sep: String): String = {
     sep +
-    "<classpathentry kind=\"" + kind.name + "\"" +
-    " path=\"" + path + "\"" +
-    writeOptionalPath("sourcepath", srcPath) +
-    writeOptionalPath("output", outputPath) +
-    filter.mkString + (
-	    if(attributes.isEmpty)
-	    	" />"
-	    else {
-	    	def mkAttribute(item: Tuple2[String, String]) = {
-	    	  "<attribute name=\"" + item._1 + "\" value=\"" + item._2 + "\" />"
-	    	}
-	    	val attrstr = ("" /: attributes.map(mkAttribute))(_ + _)
-	    	">\n<attributes>\n"+  attrstr  + "\n</attributes>\n</classpathentry>"
-	    }
-    )
+      "<classpathentry kind=\"" + kind.name + "\"" +
+      " path=\"" + path + "\"" +
+      writeOptionalPath("sourcepath", srcPath) +
+      writeOptionalPath("output", outputPath) +
+      filter.mkString + (if (attributes.isEmpty) " />"
+      else {
+        def mkAttribute(item: Tuple2[String, String]) = {
+          "<attribute name=\"" + item._1 + "\" value=\"" + item._2 + "\" />"
+        }
+        val attrstr = ("" /: attributes.map(mkAttribute))(_ + _)
+        ">\n<attributes>\n" + attrstr + "\n</attributes>\n</classpathentry>"
+      })
   }
   /** returns the sourcepath as a string when specified */
   def writeOptionalPath(attributeName: String, path: Option[String]): String = {
     path match {
-      case Some(text) => " %s=\"%s\"".format(attributeName,text)
+      case Some(text) => " %s=\"%s\"".format(attributeName, text)
       case None => ""
     }
   }
