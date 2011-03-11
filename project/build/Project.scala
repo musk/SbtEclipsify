@@ -42,7 +42,17 @@ class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) w
   	val credPath = Path.userHome / ".credentials"
   	Credentials(credPath, log)
 
-  	val publishTo = "Sonatype Nexus Repository Manager" at "http://nexus.scala-tools.org/content/repositories/releases/"
+        // Set up publish repository
+        object PublishRepositories {
+          val local    = Resolver.file("Local Maven Distribution Repository", Path.userHome / ".m2" / "repository" asFile)
+          val snapshot = "Scala-Tools Distribution Repository for Snapshots" at "http://nexus.scala-tools.org/content/repositories/snapshots/"
+          val release  = "Scala-Tools Distribution Repository for Releases"  at "http://nexus.scala-tools.org/content/repositories/releases/"
+        }
+
+        lazy val publishTo = (version.toString.endsWith("-SNAPSHOT")) match {
+          case true  => PublishRepositories.snapshot
+          case false => PublishRepositories.release
+        }
 
   	override def pomExtra =
   		<description>sbt-eclipsify is a plugin provided under a BSD-License. It generates .classpath and .project files for the Eclipse IDE from a sbt project.</description>
