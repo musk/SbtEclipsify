@@ -66,7 +66,10 @@ case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], out
     filter.mkString + (
 	    if(attributes.isEmpty)
 	    	" />"
-	    else {
+	    else if (attributes.length < 3 ) {
+	      attributes.foldLeft("")((str, kv) => str + " " + kv._1 + "=\"" + kv._2 + "\"") + 
+	    	" />"
+	    } else {
 	    	def mkAttribute(item: Tuple2[String, String]) = {
 	    	  "<attribute name=\"" + item._1 + "\" value=\"" + item._2 + "\" />"
 	    	}
