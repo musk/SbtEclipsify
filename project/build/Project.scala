@@ -30,58 +30,58 @@ import sbt._
 import de.element34.sbteclipsify._
 
 class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) with Eclipsify with posterous.Publish {
-	override def compileOptions =  super.compileOptions ++ (Unchecked :: Deprecation :: Nil)
-  	override def mainResources = super.mainResources +++ "NOTICE" +++ "LICENSE" +++ (path("licenses") * "*")
+  override def compileOptions =  super.compileOptions ++ (Unchecked :: Deprecation :: Nil)
+  override def mainResources = super.mainResources +++ "NOTICE" +++ "LICENSE" +++ (path("licenses") * "*")
 
-  	val scalaSnapshotToolsRepository = "Scala Tools Repository" at "http://nexus.scala-tools.org/content/repositories/snapshots/"
+  val scalaSnapshotToolsRepository = "Scala Tools Repository" at "http://nexus.scala-tools.org/content/repositories/snapshots/"
 
-  	lazy val scalaTest = "org.scalatest" % "scalatest" % "1.1" % "test"
+  lazy val scalaTest = "org.scalatest" % "scalatest" % "1.1" % "test"
 
-  	override def managedStyle = ManagedStyle.Maven
+  override def managedStyle = ManagedStyle.Maven
 
-  	val credPath = Path.userHome / ".credentials"
-  	Credentials(credPath, log)
+  val credPath = Path.userHome / ".credentials"
+  Credentials(credPath, log)
 
-        // Set up publish repository
-        object PublishRepositories {
-          val local    = Resolver.file("Local Maven Distribution Repository", Path.userHome / ".m2" / "repository" asFile)
-          val snapshot = "Scala-Tools Distribution Repository for Snapshots" at "http://nexus.scala-tools.org/content/repositories/snapshots/"
-          val release  = "Scala-Tools Distribution Repository for Releases"  at "http://nexus.scala-tools.org/content/repositories/releases/"
-        }
+  // Set up publish repository
+  object PublishRepositories {
+    val local    = Resolver.file("Local Maven Distribution Repository", Path.userHome / ".m2" / "repository" asFile)
+    val snapshot = "Scala-Tools Distribution Repository for Snapshots" at "http://nexus.scala-tools.org/content/repositories/snapshots/"
+    val release  = "Scala-Tools Distribution Repository for Releases"  at "http://nexus.scala-tools.org/content/repositories/releases/"
+  }
 
-        lazy val publishTo = (version.toString.endsWith("-SNAPSHOT")) match {
-          case true  => PublishRepositories.snapshot
-          case false => PublishRepositories.release
-        }
+  lazy val publishTo = (version.toString.endsWith("-SNAPSHOT")) match {
+    case true  => PublishRepositories.snapshot
+    case false => PublishRepositories.release
+  }
 
-  	override def pomExtra =
-  		<description>sbt-eclipsify is a plugin provided under a BSD-License. It generates .classpath and .project files for the Eclipse IDE from a sbt project.</description>
-  		<developers>
-  			<developer>
-  				<id>slanger</id>
-  				<name>Stefan Langer</name>
-  				<email>mailtolanger@googlemail.com</email>
-  				<roles>
-  					<role>Project Lead</role>
-  					<role>Developer</role>
-  				</roles>
-  				<timezone>2</timezone>
-  			</developer>
-  		</developers>
-  		<licenses>
-	  		<license>
-		  		<name>BSD-License</name>
-		  		<url></url>
-		  		<distribution>repo</distribution>
-		  	</license>
-		</licenses>
-		<scm>
-			<connection>git@github.com:musk/SbtEclipsify.git</connection>
-			<tag>{projectVersion.value}</tag>
-			<url>http://www.github.com/musk/SbtEclipsify</url>
-		</scm>
-		<organisation>
-			<name>Element34</name>
-			<url>http://www.element34.de</url>
-		</organisation>
+  override def pomExtra =
+    <description>sbt-eclipsify is a plugin provided under a BSD-License. It generates .classpath and .project files for the Eclipse IDE from a sbt project.</description>
+    <developers>
+      <developer>
+        <id>slanger</id>
+        <name>Stefan Langer</name>
+        <email>mailtolanger@googlemail.com</email>
+        <roles>
+          <role>Project Lead</role>
+          <role>Developer</role>
+        </roles>
+        <timezone>2</timezone>
+      </developer>
+    </developers>
+    <licenses>
+      <license>
+        <name>BSD-License</name>
+        <url></url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+    <scm>
+      <connection>git@github.com:musk/SbtEclipsify.git</connection>
+      <tag>{projectVersion.value}</tag>
+      <url>http://www.github.com/musk/SbtEclipsify</url>
+    </scm>
+    <organisation>
+      <name>Element34</name>
+      <url>http://www.element34.de</url>
+    </organisation>
 }
