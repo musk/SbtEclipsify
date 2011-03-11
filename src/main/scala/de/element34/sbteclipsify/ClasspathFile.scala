@@ -108,7 +108,7 @@ class ClasspathFile(project: Project, log: Logger) {
       case ProjectNature.Scala => 
         getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
         getResourcesPaths ++
-        getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++        classpaths() ++
+        getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++       
         classpaths() ++
         getPluginEntries ++
         List(ClasspathEntry(Container, scalaContainer),
@@ -117,7 +117,7 @@ class ClasspathFile(project: Project, log: Logger) {
       case ProjectNature.Java => 
         getJavaPaths ++ getProjectPath ++
         getResourcesPaths ++
-        getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++        classpaths() ++
+        getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++       
         classpaths() ++
         getPluginEntries ++
         List(ClasspathEntry(Container, javaContainer),
