@@ -1,0 +1,34 @@
+#####################################################
+# this file should be manually and carefully edited #
+
+*.orig
+
+# target folders
+target/
+
+# lib dependencies folders
+lib_managed
+src_managed
+
+# sbt directories
+project/boot
+project/plugins/project
+
+# sbt local properties
+#project/.*\.properties
+
+# intelliJ 
+.idea/
+.*.iml
+
+# OSX File Metadata
+.*.DS_Store
+
+# eclipse
+.classpath
+.project
+.scala_dependencies
+
+# temp file
+.*~
+
