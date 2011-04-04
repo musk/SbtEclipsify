@@ -38,13 +38,15 @@ import org.easymock._
 import de.element34.sbteclipsify._
 
 class TestProjectCreation extends FlatSpec with ShouldMatchers {
-  "A scala project" should "produce a .project filed" in { 
-    import EasyMock._
-
-    val projectMock = createMock(classOf[DefaultProject])
-    val logger = createMock(classOf[Logger])
-    
-    val res = ProjectFile(projectMock, logger).writeFile
-    res should be (None)
-  }
+  "A scala project" should "produce a .project filed" is (pending)
+  // in { 
+  //    import EasyMock._
+  //
+  //   val projectMock = createMock(classOf[DefaultProject])
+  //    val logger = createMock(classOf[Logger])
+  //    
+  //  val res = ProjectFile(projectMock, logger).writeFile
+  //    res should be (None)
+  //  }
 }
+
