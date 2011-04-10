@@ -130,7 +130,7 @@ class ClasspathFile(project: Project, mixin: EclipsifyMixin, log: Logger) {
 
 	private def findSource(basePath: Path, jar: Path): Option[String] = {
 		import sbt.Project._
-		val JarEx = """.*/([^/]*)\.jar""".r
+		val JarEx = """.*[/\\]([^/\\]*)\.jar""".r
 		jar.toString match {
 			case JarEx(name) => {
 				val finders: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => new ExactFilter(name + str))
