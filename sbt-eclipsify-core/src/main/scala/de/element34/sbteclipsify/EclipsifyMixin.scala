@@ -30,48 +30,40 @@ package de.element34.sbteclipsify
 
 import sbt._
 
-/**
- * Defines the plugin with the "eclipse" task for sbt
- */
-trait Eclipsify extends Project {
-  // TODO make this work in a multiproject setup
-  // important projectClosure method in Project
-  // project.info.parent for subproject to parent relation
-  lazy val eclipse = task {
-    log.info("Creating eclipse project...")
-    writeProjectFile(log) match {
-      case None => writeClasspathFile(log)
+trait EclipsifyMixin {
+  val eclipsifyProject: Project
+
+  def findProjects(log: Logger): List[Project] = Nil
+
+  def writeEclipseFiles() = {
+    eclipsifyProject.log.info("Creating eclipse project...")
+    writeProjectFile() match {
+      case None => writeClasspathFile()
       case ret @ Some(_) => ret
     }
-  }
-
-  lazy val eclipseName = propertyOptional[String](projectName.value)
-  lazy val projectDescription = propertyOptional[String](projectName.value + " " + projectVersion.value)
-  lazy val includeProject = propertyOptional[Boolean](false)
-  lazy val includePlugin = propertyOptional[Boolean](false)
-  lazy val sbtDependency = propertyOptional[Boolean](false)
-  lazy val pluginProject = propertyOptional[Boolean](false)
-//  lazy val customSrcPattern = propertyOptional[RegEx]()
-
-  implicit lazy val projectNatureFormat = new Format[ProjectNature.Value] {
-    def fromString(nature: String) = ProjectNature.valueOf(nature).getOrElse(ProjectNature.Scala)
-    def toString(nature: ProjectNature.Value) = nature.toString
-  }
-
-  lazy val eclipseProjectNature = propertyOptional[ProjectNature.Value](ProjectNature.Scala)
-  
-  def findProjects(log: Logger): List[Project] = {
-    Nil
   }
 
   /**
    * Writes the .classpath file to filesystem.
    * @return <code>Some(error)</code> when an error occures else returns <code>None</code>
    */
-  def writeClasspathFile(log: Logger): Option[String] = ClasspathFile(this, log).writeFile
+  def writeClasspathFile(): Option[String] = ClasspathFile(eclipsifyProject, this, eclipsifyProject.log).writeFile
   /**
    * Writes the .project file to filesystem.
    * @return <code>Some(error)</code> when an error occures else returns <code>None</code>
    */
-  def writeProjectFile(log: Logger): Option[String] = ProjectFile(this, log).writeFile
+  def writeProjectFile(): Option[String] = ProjectFile(eclipsifyProject, this, eclipsifyProject.log).writeFile
+
+  def eclipseName: BasicEnvironment#Property[String]
+  def projectDescription: BasicEnvironment#Property[String]
+  def includeProject: BasicEnvironment#Property[Boolean]
+  def includePlugin: BasicEnvironment#Property[Boolean]
+  def sbtDependency: BasicEnvironment#Property[Boolean]
+  def pluginProject: BasicEnvironment#Property[Boolean]
+  def eclipseProjectNature: BasicEnvironment#Property[ProjectNature.Value]
+
+  implicit val projectNatureFormat = new Format[ProjectNature.Value] {
+    def fromString(nature: String) = ProjectNature.valueOf(nature).getOrElse(ProjectNature.Scala)
+    def toString(nature: ProjectNature.Value) = nature.toString
+  }
 }

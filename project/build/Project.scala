@@ -27,43 +27,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 import sbt._
-import de.element34.sbteclipsify._
 
-class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) with Eclipsify  with posterous.Publish {
-	override def compileOptions =  super.compileOptions ++ (Unchecked :: Deprecation :: Nil)
-  	override def mainResources = super.mainResources +++ "NOTICE" +++ "LICENSE" +++ (path("licenses") * "*")
+class SbtEclipsifyPluginProject(info: ProjectInfo) extends ParentProject(info) with posterous.Publish {
+  override def managedStyle = ManagedStyle.Maven
 
-  	val scalaSnapshotToolsRepository = "Scala Tools Repository" at "http://nexus.scala-tools.org/content/repositories/snapshots/"
+  val scalaSnapshotToolsRepository = "Scala Tools Repository" at "http://nexus.scala-tools.org/content/repositories/snapshots/"
 
-  	lazy val scalaTest = "org.scalatest" % "scalatest" % "1.2" % "test"
+  val credPath = Path.userHome / ".credentials"
+  Credentials(credPath, log)
 
-  	override def managedStyle = ManagedStyle.Maven
+  val publishTo = "Sonatype Nexus Repository Manager" at "http://nexus.scala-tools.org/content/repositories/releases/"
 
-  	val credPath = Path.userHome / ".credentials"
-  	Credentials(credPath, log)
-
-  	val publishTo = "Sonatype Nexus Repository Manager" at "http://nexus.scala-tools.org/content/repositories/releases/"
-
-  	override def pomExtra =
-  		<description>sbt-eclipsify is a plugin provided under a BSD-License. It generates .classpath and .project files for the Eclipse IDE from a sbt project.</description>
-  		<developers>
-  			<developer>
-  				<id>slanger</id>
-  				<name>Stefan Langer</name>
-  				<email>mailtolanger@googlemail.com</email>
-  				<roles>
-  					<role>Project Lead</role>
-  					<role>Developer</role>
-  				</roles>
-  				<timezone>2</timezone>
-  			</developer>
-  		</developers>
-  		<licenses>
-	  		<license>
-		  		<name>BSD-License</name>
-		  		<url></url>
-		  		<distribution>repo</distribution>
-		  	</license>
+  override def pomExtra =
+  	<description>sbt-eclipsify is a plugin provided under a BSD-License. It generates .classpath and .project files for the Eclipse IDE from a sbt project.</description>
+  	<developers>
+  		<developer>
+  			<id>slanger</id>
+  			<name>Stefan Langer</name>
+  			<email>mailtolanger@googlemail.com</email>
+  			<roles>
+  				<role>Project Lead</role>
+  				<role>Developer</role>
+  			</roles>
+  			<timezone>2</timezone>
+  		</developer>
+  	</developers>
+  	<licenses>
+	 		<license>
+	  		<name>BSD-License</name>
+	  		<url></url>
+	  		<distribution>repo</distribution>
+	  	</license>
 		</licenses>
 		<scm>
 			<connection>git@github.com:musk/SbtEclipsify.git</connection>
@@ -73,5 +67,27 @@ class SbtEclipsifyPluginProject(info: ProjectInfo) extends PluginProject(info) w
 		<organisation>
 			<name>Element34</name>
 			<url>http://www.element34.de</url>
-		</organisation>
+		</organisation>;
+
+  lazy val core = project("sbt-eclipsify-core", "sbt-eclipsify-core", new EclipsifyCore(_))
+  lazy val plugin = project("sbt-eclipsify-plugin", "sbt-eclipsify-plugin", new EclipsifyPlugin(_), core)
+  lazy val processor = project("sbt-eclipsify-processor", "sbt-eclipsify-processor", new ProcessorProject(_), core)
+  //lazy val tests = project("sbt-eclipsify-tests", "sbt-eclipsify-tests", new EclipsifyTests(_), plugin)
+  //override def deliverProjectDependencies = super.deliverProjectDependencies.toList - tests.projectID
+
+  class EclipsifyCore(info:ProjectInfo) extends DefaultProject(info) {
+    override def mainResources = super.mainResources +++ "NOTICE" +++ "LICENSE" +++ (path("licenses") * "*")
+    override def compileOptions =  super.compileOptions ++ (Unchecked :: Deprecation :: Nil)
+    override def unmanagedClasspath = super.unmanagedClasspath +++ info.sbtClasspath
+  }
+
+  class EclipsifyPlugin(info:ProjectInfo) extends DefaultProject(info) {
+    override def compileOptions =  super.compileOptions ++ (Unchecked :: Deprecation :: Nil)
+  }
+
+  class EclipsifyTests(info: ProjectInfo) extends DefaultProject(info) {
+    lazy val scalaTest = "org.scalatest" % "scalatest" % "1.2" % "test"
+    override def publishAction = task { None }
+    override def deliverAction = task { None }
+  }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010, Stefan Langer
+ * Copyright (c) 2010, Stefan Langer and others
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,10 +26,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+package de.element34.sbteclipsify
 
 import sbt._
 
-class SbtEclipsifyPlugin(info: ProjectInfo) extends PluginDefinition(info) {
-  val t_repo = "t_repo" at "http://tristanhunt.com:8081/content/groups/public/"
-  lazy val posterous = "net.databinder" % "posterous-sbt" % "0.1.4"
+/**
+ * Defines the plugin with the "eclipse" task for sbt
+ */
+trait Eclipsify extends Project with EclipsifyMixin {
+  // TODO make this work in a multiproject setup
+  // important projectClosure method in Project
+  // project.info.parent for subproject to parent relation
+
+  val eclipsifyProject = this
+
+  lazy val eclipse = task { writeEclipseFiles() }
+
+  lazy val eclipseName = propertyOptional[String](projectName.value)
+  lazy val projectDescription = propertyOptional[String](projectName.value + " " + projectVersion.value)
+  lazy val includeProject = propertyOptional[Boolean](false)
+  lazy val includePlugin = propertyOptional[Boolean](false)
+  lazy val sbtDependency = propertyOptional[Boolean](false)
+  lazy val pluginProject = propertyOptional[Boolean](false)
+  lazy val eclipseProjectNature = propertyOptional[ProjectNature.Value](ProjectNature.Scala)
 }
