@@ -80,10 +80,10 @@ class ProjectFile(project: Project, mixin: EclipsifyMixin, log: Logger) {
 
   def getBuilderName = get(_.eclipseProjectNature) match {
     case ProjectNature.Scala => writeNodeSeq { _ => 
-      <buildCommand><name>scalaBuilder</name></buildCommand>
+      <buildCommand><name>{scalaBuilder}</name></buildCommand>
     }
     case ProjectNature.Java => writeNodeSeq { _ => 
-      <buildCommand><name>javaBuilder</name></buildCommand>
+      <buildCommand><name>{javaBuilder}</name></buildCommand>
     } 
     case ProjectNature.Android => 
      {exit()};androidBuilder.map { s => <buildCommand><name>{s}</name></buildCommand> }    
