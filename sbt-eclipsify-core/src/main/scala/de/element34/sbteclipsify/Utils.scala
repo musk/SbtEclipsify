@@ -33,20 +33,18 @@ import scala.xml._
 import sbt._
 
 object Utils {
-	def toEclipsify(project: Project): Eclipsify = project.asInstanceOf[Eclipsify]
-
-	def writeNodeSeq(body: Eclipsify => NodeSeq)(implicit project: Project): NodeSeq = {
-		writeNodeSeq(true)(body)(project)
+	def writeNodeSeq(body: EclipsifyMixin => NodeSeq)(implicit eclipsify: EclipsifyMixin): NodeSeq = {
+		writeNodeSeqIf(true)(body)(eclipsify)
 	}
 
-	def writeNodeSeq(predicate: => Boolean)(body: Eclipsify => NodeSeq)(implicit project: Project): NodeSeq = {
+	def writeNodeSeqIf(predicate: => Boolean)(body: EclipsifyMixin => NodeSeq)(implicit eclipsify: EclipsifyMixin): NodeSeq = {
 		if(predicate) {
-			body(toEclipsify(project))
+			body(eclipsify)
 		}
 		else NodeSeq.Empty
 	}
 
-	def get[T](body: Eclipsify => Environment#Property[T])(implicit project: Project): T = {
-		body(toEclipsify(project)).value
+	def get[T](body: EclipsifyMixin => Environment#Property[T])(implicit eclipsify: EclipsifyMixin): T = {
+		body(eclipsify).value
 	}
 }

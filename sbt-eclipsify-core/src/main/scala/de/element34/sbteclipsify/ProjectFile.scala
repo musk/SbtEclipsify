@@ -38,7 +38,7 @@ import scala.xml._
 /**
  * Defines the structure for a .project file.
  */
-class ProjectFile(project: Project, log: Logger) {
+class ProjectFile(project: Project, mixin: EclipsifyMixin, log: Logger) {
   /**
    * Writes the .project file to the file system
    * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>
@@ -80,10 +80,10 @@ class ProjectFile(project: Project, log: Logger) {
 
   def getBuilderName = get(_.eclipseProjectNature) match {
     case ProjectNature.Scala => writeNodeSeq { _ => 
-      <buildCommand><name>scalaBuilder</name></buildCommand>
+      <buildCommand><name>{scalaBuilder}</name></buildCommand>
     }
     case ProjectNature.Java => writeNodeSeq { _ => 
-      <buildCommand><name>javaBuilder</name></buildCommand>
+      <buildCommand><name>{javaBuilder}</name></buildCommand>
     } 
     case ProjectNature.Android => 
      {exit()};androidBuilder.map { s => <buildCommand><name>{s}</name></buildCommand> }    
@@ -105,11 +105,11 @@ class ProjectFile(project: Project, log: Logger) {
     }
   }
   
-	def getPluginNature: NodeSeq = writeNodeSeq(get(_.pluginProject)){ _ =>
+	def getPluginNature: NodeSeq = writeNodeSeqIf(get(_.pluginProject)){ _: EclipsifyMixin =>
 		<nature>{pluginNature}</nature>
 	}
 
-	def getPluginXml: NodeSeq = writeNodeSeq(get(_.pluginProject)){ _ =>
+	def getPluginXml: NodeSeq = writeNodeSeqIf(get(_.pluginProject)){ _: EclipsifyMixin =>
 		<buildCommand>
 		  <name>{manifestBuilder}</name>
 		</buildCommand>
@@ -122,6 +122,7 @@ class ProjectFile(project: Project, log: Logger) {
     def getProjectDescription: String =  get(_.projectDescription)
 
     implicit def sbtProject: Project = project
+    implicit def eclipsifyMixin: EclipsifyMixin = mixin
     /**
      * Creates dependent sub projects
      */
@@ -140,5 +141,5 @@ class ProjectFile(project: Project, log: Logger) {
  * Factory for creating <code>ProjectFile</code> instances
  */
 object ProjectFile {
-  def apply(project: Project, log: Logger) = new ProjectFile(project, log)
+  def apply(project: Project, mixin: EclipsifyMixin, log: Logger) = new ProjectFile(project, mixin, log)
 }

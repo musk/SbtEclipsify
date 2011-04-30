@@ -47,7 +47,7 @@ object ClasspathConversions {
  * @param project The sbt project for which the .classpath file is created
  * @param log The logger from the sbt project
  */
-class ClasspathFile(project: Project, log: Logger) {
+class ClasspathFile(project: Project, mixin: EclipsifyMixin, log: Logger) {
 	import ClasspathConversions._
 	import Utils._
 
@@ -59,6 +59,7 @@ class ClasspathFile(project: Project, log: Logger) {
     val depPluginsContainer = "org.eclipse.pde.core.requiredPlugins"
 
     implicit val p = project
+    implicit val eclipsifyMixin: EclipsifyMixin = mixin
 
     /**
      * writes the .classpath file to the project root
@@ -129,7 +130,7 @@ class ClasspathFile(project: Project, log: Logger) {
 
 	private def findSource(basePath: Path, jar: Path): Option[String] = {
 		import sbt.Project._
-		val JarEx = """.*/([^/]*)\.jar""".r
+		val JarEx = """.*[/\\]([^/\\]*)\.jar""".r
 		jar.toString match {
 			case JarEx(name) => {
 				val finders: List[PathFinder] = constructPathFinder(basePath, srcPatterns, str => new ExactFilter(name + str))
@@ -199,7 +200,7 @@ class ClasspathFile(project: Project, log: Logger) {
      * @return <code>List[ClasspathEntry]</code> for sbt jar
      */
 	def getSbtJarForSbtProject: List[ClasspathEntry] = {
-	    val plugin = project.asInstanceOf[Eclipsify]
+	    val plugin = mixin
 	    if(plugin.sbtDependency.value || plugin.includeProject.value || plugin.includePlugin.value) {
 			val scalaVersion = project.buildScalaVersion
 		    val sbtVersion = project.sbtVersion.get.get
@@ -213,7 +214,7 @@ class ClasspathFile(project: Project, log: Logger) {
 	}
 
 	def getPluginEntries: List[ClasspathEntry] = {
-		val plugin = project.asInstanceOf[Eclipsify]
+		val plugin = mixin
 		if(plugin.pluginProject.value)
 			List(ClasspathEntry(Container, depPluginsContainer))
 		else Nil
@@ -225,6 +226,6 @@ class ClasspathFile(project: Project, log: Logger) {
  */
 object ClasspathFile {
 
-	def apply(project: Project, log: Logger) = new ClasspathFile(project, log)
+	def apply(project: Project, mixin: EclipsifyMixin, log: Logger) = new ClasspathFile(project, mixin, log)
 }
 
