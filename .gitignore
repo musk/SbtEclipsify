@@ -13,6 +13,8 @@ src_managed
 # sbt directories
 project/boot
 project/plugins/project
+project-old/boot
+project-old/plugins/project
 
 # sbt local properties
 #project/.*\.properties
