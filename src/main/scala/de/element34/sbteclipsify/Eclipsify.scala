@@ -30,46 +30,66 @@ package de.element34.sbteclipsify
 
 import sbt._
 
+
 /**
  * Defines the plugin with the "eclipse" task for sbt
  */
-trait Eclipsify extends Project {
-  // TODO make this work in a multiproject setup
-  // important projectClosure method in Project
-  // project.info.parent for subproject to parent relation
-  lazy val eclipse = task {
-    log.info("Creating eclipse project...")
-    writeProjectFile(log) match {
-      case None => writeClasspathFile(log)
-      case ret@Some(_) => ret
-    }
-  }
+object Eclipsify extends Plugin {
+	import CommandSupport.logger
+	import Keys._
+	
+	override lazy val settings = Seq(commands += eclipse)
+	
+	lazy val eclipse: Command = Command.command("eclipse") { state =>
 
-  implicit lazy val projectNatureFormat = new Format[ProjectNature.Value] {
-    def fromString(nature: String) = ProjectNature.valueOf(nature).getOrElse(ProjectNature.Scala)
-    def toString(nature: ProjectNature.Value) = nature.toString
-  }
+		val extracted = Project.extract(state)
+		val structure = extracted.structure
 
-  def eclipseName = propertyOptional[String](projectName.value).value
-  def projectDescription = propertyOptional[String](projectName.value + " " + projectVersion.value).value
-  def includeProject = propertyOptional[Boolean](false).value
-  def includePlugin = propertyOptional[Boolean](false).value
-  def sbtDependency = propertyOptional[Boolean](false).value
-  def pluginProject = propertyOptional[Boolean](false).value
-  def eclipseProjectNature = propertyOptional[ProjectNature.Value](ProjectNature.Scala).value
+		for (ref <- structure.allProjectRefs) {
+			val name = (Keys.name in (ref, Compile) get structure.data).getOrElse("<Information unavailable>")
+			logger(state).info("Creating eclipse project %s ..." format name)
 
-  def findProjects(log: Logger): List[Project] = {
-    Nil
-  }
+			logger(state).info("created!")
+		}
+		state
+	}
 
-  /**
-   * Writes the .classpath file to filesystem.
-   * @return <code>Some(error)</code> when an error occures else returns <code>None</code>
-   */
-  def writeClasspathFile(log: Logger): Option[String] = ClasspathFile(this, log).writeFile
-  /**
-   * Writes the .project file to filesystem.
-   * @return <code>Some(error)</code> when an error occures else returns <code>None</code>
-   */
-  def writeProjectFile(log: Logger): Option[String] = ProjectFile(this, log).writeFile
+	/**
+	 * lazy val eclipse = task {
+	 * log.info("Creating eclipse project...")
+	 * writeProjectFile(log) match {
+	 * case None => writeClasspathFile(log)
+	 * case ret@Some(_) => ret
+	 * }
+	 * }
+	 *
+	 * implicit lazy val projectNatureFormat = new Format[ProjectNature.Value] {
+	 * def fromString(nature: String) = ProjectNature.valueOf(nature).getOrElse(ProjectNature.Scala)
+	 * def toString(nature: ProjectNature.Value) = nature.toString
+	 * }
+	 *
+	 * val eclipseName = settings
+	 *
+	 * def eclipseName = propertyOptional[String](projectName.value).value
+	 * def projectDescription = propertyOptional[String](projectName.value + " " + projectVersion.value).value
+	 * def includeProject = propertyOptional[Boolean](false).value
+	 * def includePlugin = propertyOptional[Boolean](false).value
+	 * def sbtDependency = propertyOptional[Boolean](false).value
+	 * def pluginProject = propertyOptional[Boolean](false).value
+	 * def eclipseProjectNature = propertyOptional[ProjectNature.Value](ProjectNature.Scala).value
+	 *
+	 * def findProjects(log: Logger): List[Project] = {
+	 * Nil
+	 * }
+	 */
+	/**
+	 * Writes the .classpath file to filesystem.
+	 * @return <code>Some(error)</code> when an error occures else returns <code>None</code>
+	 */
+	//	def writeClasspathFile(log: Logger): Option[String] = ClasspathFile(this, log).writeFile
+	/**
+	 * Writes the .project file to filesystem.
+	 * @return <code>Some(error)</code> when an error occures else returns <code>None</code>
+	 */
+	//	def writeProjectFile(log: Logger): Option[String] = ProjectFile(this, log).writeFile
 }
