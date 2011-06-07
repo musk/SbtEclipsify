@@ -28,8 +28,40 @@
  */
 package de.element34.sbteclipsify
 
-object ProjectNature extends Enumeration {
-  val Scala = Value("scala") // used by default
-  val Java = Value("java")
-  val Android = Value("android")
+sealed trait ProjectNature {
+	case class ComposedProject(override val builder: Set[String], override val nature: Set[String]) extends ProjectNature
+	def builder: Set[String] = Set.empty
+	def nature: Set[String] = Set.empty
+	def combine(other: ProjectNature): ProjectNature = ComposedProject(builder ++ other.builder, nature ++ other.nature)
+}
+
+case object JavaNature extends ProjectNature {
+	override val builder = Set("org.eclipse.jdt.core.javabuilder")
+	override val nature = Set("org.eclipse.jdt.core.javanature")
+}
+
+case object ScalaNature extends ProjectNature {
+	override val builder = Set("org.scala-ide.sdt.core.scalabuilder")
+	override val nature = Set("org.scala-ide.sdt.core.scalanature")
+}
+
+case object PluginNature extends ProjectNature {
+	override val builder = Set("org.eclipse.pde.ManifestBuilder", "org.eclipse.pde.SchemaBuilder")
+	override val nature = Set("org.eclipse.pde.PluginNature")
+}
+
+case object AndroidNature extends ProjectNature {
+	override val builder = Set("com.android.ide.eclipse.adt.ResourceManagerBuilder",
+		"com.android.ide.eclipse.adt.PreCompilerBuilder",
+		"com.android.ide.eclipse.adt.ApkBuilder")
+	override val nature = Set("com.android.ide.eclipse.adt.AndroidNature")
+}
+
+object ProjectType {
+	val Java: ProjectNature = JavaNature
+	val Scala: ProjectNature = ScalaNature combine JavaNature
+	val Android: ProjectNature = JavaNature combine AndroidNature
+	val ScalaAndroid: ProjectNature = ScalaNature combine JavaNature combine AndroidNature
+	val Plugin: ProjectNature = JavaNature combine PluginNature
+	val ScalaPlugin: ProjectNature = ScalaNature combine JavaNature combine PluginNature
 }

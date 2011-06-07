@@ -38,102 +38,53 @@ import scala.xml._
 /**
  * Defines the structure for a .project file.
  */
-class ProjectFile(project: Project, log: Logger) {
-  /**
-   * Writes the .project file to the file system
-   * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>
-   */
-  def writeFile: Option[String] = {
-    import Utils._
+case class ProjectFile(ref: ProjectRef, state: State) {
+	import CommandSupport.logger
+	import Keys._
 
-    val scalaBuilder = "org.scala-ide.sdt.core.scalabuilder"
-    val javaBuilder = "org.eclipse.jdt.core.javabuilder"
+	val log = logger(state)
+	val extracted = Project.extract(state)
+	val structure = extracted.structure
+	val project = Project.getProject(ref, structure)
+	val name = settings(Keys.name, Compile).getOrElse("No name available")
 
-    val androidBuilder = List("org.eclipse.jdt.core.javabuilder",
-      "com.android.ide.eclipse.adt.ResourceManagerBuilder",
-      "com.android.ide.eclipse.adt.PreCompilerBuilder",
-      "com.android.ide.eclipse.adt.ApkBuilder")
+	def settings[T](key: SettingKey[T], configuration: Configuration): Option[T] = key in (ref, configuration) get structure.data
 
-    val manifestBuilder = "org.eclipse.pde.ManifestBuilder"
-    val schemaBuilder = "org.eclipse.pde.SchemaBuilder"
-    val scalaNature = "org.scala-ide.sdt.core.scalanature"
-    val javaNature = "org.eclipse.jdt.core.javanature"
-    val pluginNature = "org.eclipse.pde.PluginNature"
-    val androidNature = "com.android.ide.eclipse.adt.AndroidNature"
+	/**
+	 * Writes the .project file to the file system
+	 * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>
+	 */
+	def writeFile: Option[String] = {
+		lazy val nature = settings(Eclipsify.nature, Compile).getOrElse(ProjectType.Scala)
 
-    lazy val projectFile: File = project.info.projectPath / ".project" asFile
-    lazy val projectContent = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
-       <projectDescription>
-         <name>{ project.projectName }</name>
-         <comment>{ project.projectDescription }</comment>
-         <projects>{ createSubProjects }</projects>
-         <buildSpec>
-           { getBuilderName }
-           { getPluginXml }
-         </buildSpec>
-         <natures>
-           { getMainNatures }
-           { getPluginNature }
-         </natures>
-       </projectDescription>
+		lazy val projectContent = <projectDescription>
+			<name>{ name }</name>
+			<comment>{ settings(Eclipsify.description, Compile).getOrElse("") }</comment>
+			<projects>{ createSubProjects }</projects>
+			<buildSpec>
+				{ nature.builder.map(b => <buildCommand><name>{ b }</name></buildCommand>) }
+			</buildSpec>
+			<natures>
+				{ nature.nature.map(n => <nature>{ n }</nature>) }
+			</natures>
+		</projectDescription>
 
-    def getBuilderName = project.eclipseProjectNature match {
-      case ProjectNature.Scala => writeNodeSeq { _ =>
-        <buildCommand><name>scalaBuilder</name></buildCommand>
-      }
-      case ProjectNature.Java => writeNodeSeq { _ =>
-        <buildCommand><name>javaBuilder</name></buildCommand>
-      }
-      case ProjectNature.Android =>
-        { exit() }; androidBuilder.map { s => <buildCommand><name>{ s }</name></buildCommand> }
+			/**
+			 * Creates dependent sub projects
+			 */
+			def createSubProjects = ""
 
-    }
-
-    def getMainNatures = project.eclipseProjectNature match {
-      case ProjectNature.Scala => writeNodeSeq { _ =>
-        <nature>{ scalaNature }</nature>
-         <nature>{ javaNature }</nature>
-      }
-      case ProjectNature.Java => writeNodeSeq { _ =>
-        <nature>{ javaNature }</nature>
-      }
-      case ProjectNature.Android => writeNodeSeq { _ =>
-        <nature>{ javaNature }</nature>
-         <nature>{ androidNature }</nature>
-      }
-    }
-
-    def getPluginNature: NodeSeq = writeNodeSeq(project.pluginProject) { _ =>
-      <nature>{ pluginNature }</nature>
-    }
-
-    def getPluginXml: NodeSeq = writeNodeSeq(project.pluginProject) { _ =>
-      <buildCommand>
-        <name>{ manifestBuilder }</name>
-      </buildCommand>
-       <buildCommand>
-         <name>{ schemaBuilder }</name>
-       </buildCommand>
-    }
-
-    implicit def sbtProject: Project = project
-    /**
-     * Creates dependent sub projects
-     */
-    def createSubProjects = ""
-
-    FileUtilities.touch(projectFile, log) match {
-      case Some(error) =>
-        Some("Unable to write project file " + projectFile + ": " + error)
-      case None =>
-        FileUtilities.write(projectFile, projectContent, forName("UTF-8"), log)
-    }
-  }
+		settings(Keys.baseDirectory, Compile) match {
+			case Some(s) =>
+				val projectFile = (Path(s) / ".project").getAbsolutePath
+				try {
+					XML.save(projectFile, projectContent, "utf-8", true)
+					None
+				} catch {
+					case e => Some("Error writing file %s:%n%s".format(projectFile, e))
+				}
+			case None => Some("Unable to determine base directory for project %s" format name)
+		}
+	}
 }
 
-/**
- * Factory for creating <code>ProjectFile</code> instances
- */
-object ProjectFile {
-  def apply(project: Project, log: Logger) = new ProjectFile(project, log)
-}
