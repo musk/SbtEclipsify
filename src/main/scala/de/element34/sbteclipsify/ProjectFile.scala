@@ -69,9 +69,6 @@ case class ProjectFile(ref: ProjectRef, state: State) {
 			</natures>
 		</projectDescription>
 
-			/**
-			 * Creates dependent sub projects
-			 */
 			def createSubProjects = ""
 
 		settings(Keys.baseDirectory, Compile) match {
