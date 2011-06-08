@@ -28,29 +28,11 @@
  */
 package de.element34.sbteclipsify
 
-import scala.xml._
+import scala.xml._ 
 
 import sbt._
 
 object Utils {
-  /**
-   * cast <code>Project</code> to <code>Eclipsify</code>
-   */
-  implicit def toEclipsify(project: Project): Eclipsify = project.asInstanceOf[Eclipsify]
-
-  /**
-   * Writes <code>NodeSeq</code> getting access to <code>Eclipsify</code> parameters by converting implicitly passed parameter project to <code>Eclipsify</code>
-   */
-  def writeNodeSeq(body: Eclipsify => NodeSeq)(implicit project: Project): NodeSeq = {
-    writeNodeSeq(true)(body)(project)
-  }
-
-  /**
-   * Writes a <code>NodeSeq</code> if the predicate is true else returns an empty <code>NodeSeq</code>. Automatically converts implicitly passed project to Eclipsify trait to access parameters.
-   */
-  def writeNodeSeq(predicate: => Boolean)(body: Eclipsify => NodeSeq)(implicit project: Project): NodeSeq = {
-    if (predicate) {
-      body(toEclipsify(project))
-    } else NodeSeq.Empty
-  }
+	
+	def setting[T](ref: ProjectRef, key: SettingKey[T], configuration: Configuration)(implicit structure: Load.BuildStructure): Option[T] = key in (ref, configuration) get structure.data
 }

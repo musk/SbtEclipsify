@@ -40,26 +40,24 @@ import scala.xml._
  */
 case class ProjectFile(ref: ProjectRef, state: State) {
 	import CommandSupport.logger
-	import Keys._
-
+	import Utils._
+	
 	val log = logger(state)
 	val extracted = Project.extract(state)
-	val structure = extracted.structure
+	implicit val structure = extracted.structure
 	val project = Project.getProject(ref, structure)
-	val name = settings(Keys.name, Compile).getOrElse("No name available")
-
-	def settings[T](key: SettingKey[T], configuration: Configuration): Option[T] = key in (ref, configuration) get structure.data
+	val name = setting(ref, Keys.name, Compile).getOrElse("No name available")
 
 	/**
 	 * Writes the .project file to the file system
 	 * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>
 	 */
 	def writeFile: Option[String] = {
-		lazy val nature = settings(Eclipsify.nature, Compile).getOrElse(ProjectType.Scala)
+		lazy val nature = setting(ref, Eclipsify.nature, Compile).getOrElse(ProjectType.Scala)
 
 		lazy val projectContent = <projectDescription>
 			<name>{ name }</name>
-			<comment>{ settings(Eclipsify.description, Compile).getOrElse("") }</comment>
+			<comment>{ setting(ref, Eclipsify.description, Compile).getOrElse("") }</comment>
 			<projects>{ createSubProjects }</projects>
 			<buildSpec>
 				{ nature.builder.map(b => <buildCommand><name>{ b }</name></buildCommand>) }
@@ -71,7 +69,7 @@ case class ProjectFile(ref: ProjectRef, state: State) {
 
 			def createSubProjects = ""
 
-		settings(Keys.baseDirectory, Compile) match {
+		setting(ref, Keys.baseDirectory, Compile) match {
 			case Some(s) =>
 				val projectFile = (Path(s) / ".project").getAbsolutePath
 				try {

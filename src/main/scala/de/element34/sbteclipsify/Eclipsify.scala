@@ -58,6 +58,10 @@ object Eclipsify extends Plugin {
 				case None => log.info("written .project for %s" format name)
 				case Some(err) => log.info("unable to write .project for %s due to %s".format(name, err))
 			}
+			ClasspathFile(ref, state).writeFile match {
+				case None => log.info("written .classpath for %s" format name)
+				case Some(err) => log.info("unable to write .classpath for %s due to %s".format(name, err))
+			}
 
 			//			val depProject = Project.getProject(ref, structure)
 			//			depProject.foreach(dp => {

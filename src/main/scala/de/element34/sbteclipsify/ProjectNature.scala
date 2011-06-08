@@ -29,25 +29,30 @@
 package de.element34.sbteclipsify
 
 sealed trait ProjectNature {
-	case class ComposedProject(override val builder: Set[String], override val nature: Set[String]) extends ProjectNature
+	case class ComposedProject(override val builder: Set[String], override val nature: Set[String], override val container: Set[String]) extends ProjectNature
 	def builder: Set[String] = Set.empty
 	def nature: Set[String] = Set.empty
-	def combine(other: ProjectNature): ProjectNature = ComposedProject(builder ++ other.builder, nature ++ other.nature)
+	def container: Set[String] = Set.empty
+	def combine(other: ProjectNature): ProjectNature = ComposedProject(builder ++ other.builder,
+		nature ++ other.nature, container ++ other.container)
 }
 
 case object JavaNature extends ProjectNature {
 	override val builder = Set("org.eclipse.jdt.core.javabuilder")
 	override val nature = Set("org.eclipse.jdt.core.javanature")
+	override val container = Set("org.eclipse.jdt.launching.JRE_CONTAINER")
 }
 
 case object ScalaNature extends ProjectNature {
 	override val builder = Set("org.scala-ide.sdt.core.scalabuilder")
 	override val nature = Set("org.scala-ide.sdt.core.scalanature")
+	override val container = Set("org.scala-ide.sdt.launching.SCALA_CONTAINER")
 }
 
 case object PluginNature extends ProjectNature {
 	override val builder = Set("org.eclipse.pde.ManifestBuilder", "org.eclipse.pde.SchemaBuilder")
 	override val nature = Set("org.eclipse.pde.PluginNature")
+	override val container = Set("org.eclipse.pde.core.requiredPlugins")
 }
 
 case object AndroidNature extends ProjectNature {
@@ -55,6 +60,10 @@ case object AndroidNature extends ProjectNature {
 		"com.android.ide.eclipse.adt.PreCompilerBuilder",
 		"com.android.ide.eclipse.adt.ApkBuilder")
 	override val nature = Set("com.android.ide.eclipse.adt.AndroidNature")
+}
+
+case object SbtEclipseIntegrationNature extends ProjectNature {
+	override val nature = Set("de.element34.sbt-eclipse-integration.nature")
 }
 
 object ProjectType {
