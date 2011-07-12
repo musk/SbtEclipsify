@@ -62,20 +62,25 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 		baseDir.map(projectBase => {
 
 			val cpEntries: Set[ClasspathEntry] = {
-				
+
 				val compileExcludes = setting(ref, Keys.defaultExcludes, Compile).getOrElse(NothingFilter)
 				val testExcludes = setting(ref, Keys.defaultExcludes, Test).getOrElse(NothingFilter)
 				val runtimeExcludes = setting(ref, Keys.defaultExcludes, Runtime).getOrElse(NothingFilter)
 				val provExcludes = setting(ref, Keys.defaultExcludes, Provided).getOrElse(NothingFilter)
 				val exclude: FileFilter = compileExcludes && testExcludes && runtimeExcludes && provExcludes
-				
+
+					def processSrc(sources: Seq[File]): Set[ClasspathEntry] = sources.map(file => {
+						log.debug("Processing %s for classpathentry!".format(file))
+						ClasspathEntry(Source, IO.relativize(projectBase, file).getOrElse(file.getAbsolutePath))
+					}).toSet
+					
 					def processResult(res: Result[Classpath]): Set[ClasspathEntry] = res.toEither match {
 						case Right(fileList) =>
 							fileList.filterNot(lib => {
-									val result = lib.data.getName == ScalaLib || exclude.accept(lib.data)
-									log.debug("lib %s filtered %b".format(lib.data, result))
-									result 
-								}).map(lib => {
+								val result = lib.data.getName == ScalaLib || exclude.accept(lib.data)
+								log.debug("lib %s filtered %b".format(lib.data, result))
+								result
+							}).map(lib => {
 								ClasspathEntry(Library, IO.relativize(projectBase, lib.data).getOrElse(lib.data.getAbsolutePath))
 							}).toSet
 						case Left(inc) =>
@@ -86,26 +91,20 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 					def evaluate(ref: ProjectRef, key: TaskKey[Classpath], config: Configuration)(implicit state: State, structure: Load.BuildStructure) =
 						EvaluateTask.evaluateTask(structure, key in config, state, ref, false, EvaluateTask.SystemProcessors)
 
-						
-				
-				val unmanagedSources = setting(ref, Keys.unmanagedSourceDirectories, Compile)
-				val unmanagedRes = setting(ref, Keys.unmanagedResourceDirectories, Compile)
-					def processSrc(sources: Option[Seq[File]]): Option[Seq[ClasspathEntry]] = sources.map(_.map(file => {
-						log.debug("Processing %s for classpathentry!".format(file))
-						ClasspathEntry(Source, IO.relativize(projectBase, file).getOrElse(file.getAbsolutePath))
-					}))
+				val unmanagedSources = setting(ref, Keys.unmanagedSourceDirectories, Compile).map(processSrc _).getOrElse(Set.empty[ClasspathEntry])
+				val unmanagedRes = setting(ref, Keys.unmanagedResourceDirectories, Compile).map(processSrc _).getOrElse(Set.empty[ClasspathEntry])
 
 				val compileJars = evaluate(ref, Keys.unmanagedClasspath, Compile).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
 				val testJars = evaluate(ref, Keys.unmanagedClasspath, Test).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
 				val runtimeJars = evaluate(ref, Keys.unmanagedClasspath, Runtime).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
 				val providedJars = evaluate(ref, Keys.unmanagedClasspath, Provided).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
-			
+
 				val clibs = evaluate(ref, Keys.externalDependencyClasspath, Compile).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
 				val tlibs = evaluate(ref, Keys.externalDependencyClasspath, Test).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
 				val rlibs = evaluate(ref, Keys.externalDependencyClasspath, Runtime).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
 				val plibs = evaluate(ref, Keys.externalDependencyClasspath, Provided).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
 
-				val classpath = clibs ++ tlibs ++ rlibs ++ plibs ++ compileJars ++ testJars ++ runtimeJars ++ providedJars
+				val classpath = clibs ++ tlibs ++ rlibs ++ plibs ++ compileJars ++ testJars ++ runtimeJars ++ providedJars ++ unmanagedSources ++ unmanagedRes
 				log.debug("Finding classpathentries %s".format(classpath.map(n => n.path + " - " + n.kind).mkString(",")))
 				classpath
 			}
