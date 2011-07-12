@@ -32,19 +32,13 @@ import scala.xml._
 import sbt._
 
 import java.io.File
-import java.nio.charset.Charset._
-import collection.mutable.ListBuffer
-
-///** Implicit definitions for converting strings to paths and viceversa */
-//object ClasspathConversions {
-//  implicit def pathToString(path: Path): String = path.toString
-//  implicit def pathToOptionString(path: Path): Option[String] = Some(path.toString)
-//}
 
 /**
  * Gathers the structural information for a .classpath file.
  * @param project The sbt project for which the .classpath file is created
  * @param log The logger from the sbt project
+ *
+ * TODO add support for filters
  */
 case class ClasspathFile(ref: ProjectRef, state: State) {
 	import CommandSupport.logger
@@ -55,88 +49,66 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 	val extracted = Project.extract(state)
 	implicit val structure = extracted.structure
 	implicit val implicitState = state
-	val project = Project.getProject(ref, structure)
-	val name = setting(ref, Keys.name, Compile).getOrElse("No name available")
+	val name = setting(ref, Keys.name, Compile).getOrElse("Unable to determine name")
+	val baseDir = setting(ref, Keys.baseDirectory, Compile)
+
+	val ScalaLib = "scala-library.jar"
 
 	/**
 	 * writes the .classpath file to the project root
 	 * @return <code>Some(error)</code>, where error designates the error message to display, when an error occures else returns <code>None</code>
 	 */
 	def writeFile: Option[String] = {
-		val entries = {
-				def evaluate(ref: ProjectRef, key: TaskKey[Classpath], config: Configuration)(implicit state: State, structure: Load.BuildStructure) =
-					EvaluateTask.evaluateTask(structure, key in config, state, ref, false, EvaluateTask.SystemProcessors)
+		baseDir.map(projectBase => {
 
-			val managedSources = setting(ref, Keys.managedSourceDirectories, Compile).getOrElse("<No managed sources available>")
-			log.info("Managed sources: %s" format managedSources)
+			val cpEntries: Set[ClasspathEntry] = {
+					def processResult(res: Result[Classpath]): Set[ClasspathEntry] = res.toEither match {
+						case Right(fileList) =>
+							fileList.filterNot(_.data.getName == ScalaLib).map(lib => {
+								ClasspathEntry(Library, IO.relativize(projectBase, lib.data).getOrElse(lib.data.getAbsolutePath))
+							}).toSet
+						case Left(inc) =>
+							log.error("Unable to resolve compile dependencies! %s".format(inc))
+							Set.empty[ClasspathEntry]
+					}
 
-			val unmanagedSources = setting(ref, Keys.unmanagedSourceDirectories, Compile).getOrElse("<No unmanaged sources available>")
-			log.info("Unmanaged sources: %s" format unmanagedSources)
+					def evaluate(ref: ProjectRef, key: TaskKey[Classpath], config: Configuration)(implicit state: State, structure: Load.BuildStructure) =
+						EvaluateTask.evaluateTask(structure, key in config, state, ref, false, EvaluateTask.SystemProcessors)
 
-			val managedRes = setting(ref, Keys.managedResourceDirectories , Compile) getOrElse "<No managed resources>"
-			log.info("Managed resources: %s" format managedRes)
+				val unmanagedSources = setting(ref, Keys.unmanagedSourceDirectories, Compile)
+				val unmanagedRes = setting(ref, Keys.unmanagedResourceDirectories, Compile)
+					def processSrc(sources: Option[Seq[File]]): Option[Seq[ClasspathEntry]] = sources.map(_.map(file => {
+						log.debug("Processing %s for classpathentry!".format(file))
+						ClasspathEntry(Source, IO.relativize(projectBase, file).getOrElse(file.getAbsolutePath))
+					}))
 
-			val unmanagedRes = setting(ref, Keys.unmanagedResourceDirectories, Compile) getOrElse "<No unmanaged resources>"
-			log.info("Unmanaged resources: %s" format unmanagedRes)
+				val compileJars = evaluate(ref, Keys.unmanagedClasspath, Compile).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
+				val testJars = evaluate(ref, Keys.unmanagedClasspath, Test).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
+				val runtimeJars = evaluate(ref, Keys.unmanagedClasspath, Runtime).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
+				val providedJars = evaluate(ref, Keys.unmanagedClasspath, Provided).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
+			
+				val clibs = evaluate(ref, Keys.externalDependencyClasspath, Compile).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
+				val tlibs = evaluate(ref, Keys.externalDependencyClasspath, Test).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
+				val rlibs = evaluate(ref, Keys.externalDependencyClasspath, Runtime).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
+				val plibs = evaluate(ref, Keys.externalDependencyClasspath, Provided).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
 
-			val compileDep = evaluate(ref, Keys.externalDependencyClasspath, Compile)
-			val testDep = evaluate(ref, Keys.externalDependencyClasspath, Test)
-			val runtimeDep = evaluate(ref, Keys.externalDependencyClasspath, Runtime)
-			val provDep = evaluate(ref, Keys.externalDependencyClasspath, Provided)
+				val classpath = clibs ++ tlibs ++ rlibs ++ plibs ++ compileJars ++ testJars ++ runtimeJars ++ providedJars
+				log.debug("Finding classpathentries %s".format(classpath.map(n => n.path + " - " + n.kind).mkString(",")))
+				classpath
+			}
 
-			log.info("Compile deps: %s" format compileDep)
-			log.info("Test deps: %s" format testDep)
-			log.info("Runtime deps: %s" format runtimeDep)
-			log.info("Provided deps: %s" format provDep)
+			lazy val classpathContent = <classpath>
+				{ (NodeSeq.Empty /: cpEntries)(_ ++ _.toNodeSeq) }
+			</classpath>
 
-			//		val referencedProjects = project.info.dependencies.toList
-			//
-			//		val l = project.eclipseProjectNature match {
-			//			case ProjectNature.Scala =>
-			//				getJavaPaths ++ getScalaPaths ++ getProjectPath ++ getSbtJarForSbtProject ++
-			//					getResourcesPaths ++
-			//					getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++
-			//					classpaths() ++
-			//					getPluginEntries ++
-			//					List(ClasspathEntry(Container, scalaContainer),
-			//						ClasspathEntry(Container, javaContainer),
-			//						ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
-			//			case ProjectNature.Java =>
-			//				getJavaPaths ++ getProjectPath ++
-			//					getResourcesPaths ++
-			//					getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++
-			//					classpaths() ++
-			//					getPluginEntries ++
-			//					List(ClasspathEntry(Container, javaContainer),
-			//						ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
-			//			case ProjectNature.Android =>
-			//				getJavaPaths ++ getProjectPath ++
-			//					getResourcesPaths ++
-			//					getReferencedProjects(referencedProjects) ++ getReferencedProjectsDependencies(referencedProjects) ++
-			//					classpaths() ++
-			//					getPluginEntries ++
-			//					List(ClasspathEntry(Container, javaContainer),
-			//						ClasspathEntry(Output, project.asInstanceOf[MavenStyleScalaPaths].mainCompilePath.projectRelativePath))
-			//		}
-			//		l.removeDuplicates
-			true
-		}
-
-		//	{ ("" /: entries)(_ + _.mkString("\n")) }
-		lazy val classpathContent = <classpath>
-		</classpath>
-
-		setting(ref, Keys.baseDirectory, Compile) match {
-			case Some(s) =>
-				val classpathFile = (Path(s) / ".classpath").getAbsolutePath
-				try {
-					XML.save(classpathFile, classpathContent, "utf-8", true)
-					None
-				} catch {
-					case e => Some("Error writing file %s:%n%s".format(classpathFile, e))
-				}
-			case None => Some("Unable to determine base directory for project %s" format name)
-		}
+			val classpathFile = (Path(projectBase) / ".classpath").getAbsolutePath
+			try {
+				XML.save(classpathFile, classpathContent, "utf-8", true)
+				None
+			} catch {
+				case e => Some("Error writing file %s:%n%s".format(classpathFile, e))
+			}
+		}) getOrElse Some("Unable to resolve base directory for project %s" format name)
 	}
 
 	//	def classpaths(): List[ClasspathEntry] = {

@@ -51,51 +51,68 @@ case object Library extends Kind("lib")
  * @see the eclipse documentatin for further information about classpathentries
  */
 case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], outputPath: Option[String], filter: FilterChain, attributes: List[Tuple2[String, String]]) {
-  /** @see mkString(sep: String) */
-  def mkString: String = mkString("")
-  /**
-   * converts this <code>ClasspathEntry</code > into a xml string representation
-   * @param sep Defines the leading separater <code>String</code> prepended to each classpathentry
-   */
-  def mkString(sep: String): String = {
-    sep +
-      "<classpathentry kind=\"" + kind.name + "\"" +
-      " path=\"" + path + "\"" +
-      writeOptionalPath("sourcepath", srcPath) +
-      writeOptionalPath("output", outputPath) +
-      filter.mkString + (if (attributes.isEmpty) " />"
-      else if (attributes.length < 3) {
-        attributes.foldLeft("")((str, kv) => str + " " + kv._1 + "=\"" + kv._2 + "\"") +
-          " />"
-      } else {
-        def mkAttribute(item: Tuple2[String, String]) = {
-          "<attribute name=\"" + item._1 + "\" value=\"" + item._2 + "\" />"
-        }
-        val attrstr = ("" /: attributes.map(mkAttribute))(_ + _)
-        ">\n<attributes>\n" + attrstr + "\n</attributes>\n</classpathentry>"
-      })
-  }
-  /** returns the sourcepath as a string when specified */
-  def writeOptionalPath(attributeName: String, path: Option[String]): String = {
-    path match {
-      case Some(text) => " %s=\"%s\"".format(attributeName, text)
-      case None => ""
-    }
-  }
+	import scala.xml._
+
+	def toNodeSeq: NodeSeq = {
+		val cp = <classpathentry kind={ kind.name } path={path}>
+			{
+				if (attributes.nonEmpty) {
+					<attributes>
+						{ attributes.map(attr => <attribute name={ attr._1 } value={ attr._2 }/>).foldLeft(NodeSeq.Empty)(_ ++ _) }
+					</attributes>
+				}
+			}
+		</classpathentry>
+		cp % optionalPath("sourcePath", srcPath) % optionalPath("output", outputPath) % filter.toMetaData
+	}
+	/** @see mkString(sep: String) */
+	def mkString: String = mkString("")
+	/**
+	 * converts this <code>ClasspathEntry</code > into a xml string representation
+	 * @param sep Defines the leading separater <code>String</code> prepended to each classpathentry
+	 */
+	def mkString(sep: String): String = {
+		sep +
+			"<classpathentry kind=\"" + kind.name + "\"" +
+			" path=\"" + path + "\"" +
+			writeOptionalPath("sourcepath", srcPath) +
+			writeOptionalPath("output", outputPath) +
+			filter.mkString + (if (attributes.isEmpty) " />"
+			else if (attributes.length < 3) {
+				attributes.foldLeft("")((str, kv) => str + " " + kv._1 + "=\"" + kv._2 + "\"") +
+					" />"
+			} else {
+					def mkAttribute(item: Tuple2[String, String]) = {
+						"<attribute name=\"" + item._1 + "\" value=\"" + item._2 + "\" />"
+					}
+				val attrstr = ("" /: attributes.map(mkAttribute))(_ + _)
+				">\n<attributes>\n" + attrstr + "\n</attributes>\n</classpathentry>"
+			})
+	}
+
+	/** returns the sourcepath as a string when specified */
+	def writeOptionalPath(attributeName: String, path: Option[String]): String = {
+		path match {
+			case Some(text) => " %s=\"%s\"".format(attributeName, text)
+			case None => ""
+		}
+	}
+
+	def optionalPath(attributeName: String, path: Option[String]): MetaData = path.map(new UnprefixedAttribute(attributeName, _, Node.NoAttributes)).getOrElse(Node.NoAttributes)
 }
 
 /**
  * Factory providing convenience methods for creating <code>ClasspathEntry</code>
  */
 object ClasspathEntry {
-  def apply(kind: Kind, path: String) = new ClasspathEntry(kind, path, None, None, EmptyFilter, Nil)
-  def apply(kind: Kind, path: String, srcPath: Option[String]) = new ClasspathEntry(kind, path, srcPath, None, EmptyFilter, Nil)
-  def apply(kind: Kind, path: String, srcPath: String) = new ClasspathEntry(kind, path, Some(srcPath), None, EmptyFilter, Nil)
-  def apply(kind: Kind, path: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, None, filter, Nil)
-  def apply(kind: Kind, path: String, outputPath: Option[String], filter: FilterChain) = new ClasspathEntry(kind, path, None, outputPath, filter, Nil)
-  def apply(kind: Kind, path: String, outputPath: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, Some(outputPath), filter, Nil)
-  def apply(kind: Kind, path: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, EmptyFilter, attributes)
-  def apply(kind: Kind, path: String, srcPath: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcPath), None, EmptyFilter, attributes)
-  def apply(kind: Kind, path: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, filter, attributes)
-  def apply(kind: Kind, path: String, srcPath: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcPath), None, filter, attributes)
+	def apply(kind: Kind, path: String) = new ClasspathEntry(kind, path, None, None, EmptyFilter, Nil)
+	def apply(kind: Kind, path: String, srcPath: Option[String]) = new ClasspathEntry(kind, path, srcPath, None, EmptyFilter, Nil)
+	def apply(kind: Kind, path: String, srcPath: String) = new ClasspathEntry(kind, path, Some(srcPath), None, EmptyFilter, Nil)
+	def apply(kind: Kind, path: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, None, filter, Nil)
+	def apply(kind: Kind, path: String, outputPath: Option[String], filter: FilterChain) = new ClasspathEntry(kind, path, None, outputPath, filter, Nil)
+	def apply(kind: Kind, path: String, outputPath: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, Some(outputPath), filter, Nil)
+	def apply(kind: Kind, path: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, EmptyFilter, attributes)
+	def apply(kind: Kind, path: String, srcPath: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcPath), None, EmptyFilter, attributes)
+	def apply(kind: Kind, path: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, filter, attributes)
+	def apply(kind: Kind, path: String, srcPath: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcPath), None, filter, attributes)
 }

@@ -28,49 +28,50 @@
  */
 package de.element34.sbteclipsify
 
+import scala.xml._
 /**
  * Base class for classpathentry filters.
  */
-abstract class Filter(pattern: String) {
-  def mkString = "=\"" + pattern + "\""
+trait Filter {	
+	def pattern: String
+	def name: String
+
+	def mkString = """%s="%s"""" format (name, pattern)
+	def toMetaData = new UnprefixedAttribute(name, pattern, Node.NoAttributes)
 }
 /**
  * Defines a include pattern for a classpath entry. <br />
  * e.g.: <code>&lt;classpathentry kind="src" path="src/" including="*.scala" /&gt;</code>
  */
-case class IncludeFilter(pattern: String) extends Filter(pattern) {
-  override def mkString = " including" + super.mkString
+case class IncludeFilter(pattern: String) extends Filter {
+	val name = "including"
 }
 /**
  * Defines a exclude pattern for a classpath entry. <br />
  * e.g.: <code>&lt;classpathentry kind="src" path="src/" excluding="*.scala" /&gt;</code>
  */
-case class ExcludeFilter(pattern: String) extends Filter(pattern) {
-  override def mkString = " excluding" + super.mkString
+case class ExcludeFilter(pattern: String) extends Filter {
+	val name = "excluding"
 }
 
 /**
  * Combines <code>IncludeFilter</code> and <code>ExcludeFilter</code> for use in a <code>ClasspathEntry</code>
  */
 case class FilterChain(inc: Option[IncludeFilter], ex: Option[ExcludeFilter]) {
-  /**
-   * Generates the actual markup for a classpathentry
-   */
-  def mkString: String = {
-    def getStrOrEmpty[A <: Filter](opt: Option[A]) = {
-      opt.map(_.mkString).getOrElse("")
-    }
-    getStrOrEmpty[IncludeFilter](inc) + getStrOrEmpty[ExcludeFilter](ex)
-  }
+	/**
+	 * Generates the actual markup for a classpathentry
+	 */
+	def mkString: String = inc.map(_.mkString).getOrElse("") + ex.map(_.mkString).getOrElse("")
+	def toMetaData = inc.map(_.toMetaData).getOrElse(Node.NoAttributes) append ex.map(_.toMetaData).getOrElse(Node.NoAttributes)
 }
 
 /**
  * Companion object for <code>FilterChain</code> to provide convenience method for their creation.
  */
 object FilterChain {
-  def apply(inc: IncludeFilter, ex: ExcludeFilter) = new FilterChain(Some(inc), Some(ex))
-  def apply(inc: IncludeFilter) = new FilterChain(Some(inc), None)
-  def apply(ex: ExcludeFilter) = new FilterChain(None, Some(ex))
+	def apply(inc: IncludeFilter, ex: ExcludeFilter) = new FilterChain(Some(inc), Some(ex))
+	def apply(inc: IncludeFilter) = new FilterChain(Some(inc), None)
+	def apply(ex: ExcludeFilter) = new FilterChain(None, Some(ex))
 }
 
 /**
