@@ -62,9 +62,20 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 		baseDir.map(projectBase => {
 
 			val cpEntries: Set[ClasspathEntry] = {
+				
+				val compileExcludes = setting(ref, Keys.defaultExcludes, Compile).getOrElse(NothingFilter)
+				val testExcludes = setting(ref, Keys.defaultExcludes, Test).getOrElse(NothingFilter)
+				val runtimeExcludes = setting(ref, Keys.defaultExcludes, Runtime).getOrElse(NothingFilter)
+				val provExcludes = setting(ref, Keys.defaultExcludes, Provided).getOrElse(NothingFilter)
+				val exclude: FileFilter = compileExcludes && testExcludes && runtimeExcludes && provExcludes
+				
 					def processResult(res: Result[Classpath]): Set[ClasspathEntry] = res.toEither match {
 						case Right(fileList) =>
-							fileList.filterNot(_.data.getName == ScalaLib).map(lib => {
+							fileList.filterNot(lib => {
+									val result = lib.data.getName == ScalaLib || exclude.accept(lib.data)
+									log.debug("lib %s filtered %b".format(lib.data, result))
+									result 
+								}).map(lib => {
 								ClasspathEntry(Library, IO.relativize(projectBase, lib.data).getOrElse(lib.data.getAbsolutePath))
 							}).toSet
 						case Left(inc) =>
@@ -75,6 +86,8 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 					def evaluate(ref: ProjectRef, key: TaskKey[Classpath], config: Configuration)(implicit state: State, structure: Load.BuildStructure) =
 						EvaluateTask.evaluateTask(structure, key in config, state, ref, false, EvaluateTask.SystemProcessors)
 
+						
+				
 				val unmanagedSources = setting(ref, Keys.unmanagedSourceDirectories, Compile)
 				val unmanagedRes = setting(ref, Keys.unmanagedResourceDirectories, Compile)
 					def processSrc(sources: Option[Seq[File]]): Option[Seq[ClasspathEntry]] = sources.map(_.map(file => {
