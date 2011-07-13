@@ -69,42 +69,50 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 				val provExcludes = setting(ref, Keys.defaultExcludes, Provided).getOrElse(NothingFilter)
 				val exclude: FileFilter = compileExcludes && testExcludes && runtimeExcludes && provExcludes
 
-					def processSrc(sources: Seq[File]): Set[ClasspathEntry] = sources.map(file => {
-						log.debug("Processing %s for classpathentry!".format(file))
-						ClasspathEntry(Source, IO.relativize(projectBase, file).getOrElse(file.getAbsolutePath))
+					//					def processSrc(sources: Seq[Classpath]): Set[ClasspathEntry] = sources.map(file => {
+					//						log.debug("Processing %s for classpathentry!".format(file))
+					//						ClasspathEntry(Source, IO.relativize(projectBase, file).getOrElse(file.getAbsolutePath))
+					//					}).toSet
+					implicit def convAF2F(file: Attributed[File]): File = file.data
+					implicit def noConv(file: File): File = file
+
+					def createClasspathEntry[A](kind: Kind, files: Seq[A])(implicit conv: A => File) = files.map(conv).filterNot(f => {
+						val result = f.getName == ScalaLib || exclude.accept(f)
+						log.debug("%s filtered %b".format(f, result))
+						result
+					}).map(f => {
+						ClasspathEntry(kind, IO.relativize(projectBase, f).getOrElse(f.getAbsolutePath))
 					}).toSet
-					
-					def processResult(res: Result[Classpath]): Set[ClasspathEntry] = res.toEither match {
-						case Right(fileList) =>
-							fileList.filterNot(lib => {
-								val result = lib.data.getName == ScalaLib || exclude.accept(lib.data)
-								log.debug("lib %s filtered %b".format(lib.data, result))
-								result
-							}).map(lib => {
-								ClasspathEntry(Library, IO.relativize(projectBase, lib.data).getOrElse(lib.data.getAbsolutePath))
-							}).toSet
+
+					def processResult[A](kind: Kind)(res: Result[Seq[A]])(implicit conv: A => File): Set[ClasspathEntry] = res.toEither match {
+						case Right(files) =>
+							createClasspathEntry(kind, files)(conv)
 						case Left(inc) =>
 							log.error("Unable to resolve compile dependencies! %s".format(inc))
 							Set.empty[ClasspathEntry]
 					}
 
-					def evaluate(ref: ProjectRef, key: TaskKey[Classpath], config: Configuration)(implicit state: State, structure: Load.BuildStructure) =
+					def evaluate[A](ref: ProjectRef, key: TaskKey[A], config: Configuration)(implicit state: State, structure: Load.BuildStructure) =
 						EvaluateTask.evaluateTask(structure, key in config, state, ref, false, EvaluateTask.SystemProcessors)
 
-				val unmanagedSources = setting(ref, Keys.unmanagedSourceDirectories, Compile).map(processSrc _).getOrElse(Set.empty[ClasspathEntry])
-				val unmanagedRes = setting(ref, Keys.unmanagedResourceDirectories, Compile).map(processSrc _).getOrElse(Set.empty[ClasspathEntry])
+				val procLib = processResult[Attributed[File]](Library) _
+				val procSrc = processResult[File](Source) _
 
-				val compileJars = evaluate(ref, Keys.unmanagedClasspath, Compile).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
-				val testJars = evaluate(ref, Keys.unmanagedClasspath, Test).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
-				val runtimeJars = evaluate(ref, Keys.unmanagedClasspath, Runtime).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
-				val providedJars = evaluate(ref, Keys.unmanagedClasspath, Provided).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
+				// TODO need to find a way to process files as attributed files
+				val sources = evaluate(ref, Keys.sources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
+				val resources = evaluate(ref, Keys.resources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
 
-				val clibs = evaluate(ref, Keys.externalDependencyClasspath, Compile).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
-				val tlibs = evaluate(ref, Keys.externalDependencyClasspath, Test).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
-				val rlibs = evaluate(ref, Keys.externalDependencyClasspath, Runtime).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
-				val plibs = evaluate(ref, Keys.externalDependencyClasspath, Provided).map(processResult _).getOrElse(Set.empty[ClasspathEntry])
+				val compileJars = evaluate(ref, Keys.unmanagedClasspath, Compile).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val testJars = evaluate(ref, Keys.unmanagedClasspath, Test).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val runtimeJars = evaluate(ref, Keys.unmanagedClasspath, Runtime).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val providedJars = evaluate(ref, Keys.unmanagedClasspath, Provided).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
 
-				val classpath = clibs ++ tlibs ++ rlibs ++ plibs ++ compileJars ++ testJars ++ runtimeJars ++ providedJars ++ unmanagedSources ++ unmanagedRes
+				val clibs = evaluate(ref, Keys.externalDependencyClasspath, Compile).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val tlibs = evaluate(ref, Keys.externalDependencyClasspath, Test).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val rlibs = evaluate(ref, Keys.externalDependencyClasspath, Runtime).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val plibs = evaluate(ref, Keys.externalDependencyClasspath, Provided).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+
+				val classpath = clibs ++ tlibs ++ rlibs ++ plibs ++ compileJars ++ testJars ++ runtimeJars ++ providedJars ++ sources ++ resources
 				log.debug("Finding classpathentries %s".format(classpath.map(n => n.path + " - " + n.kind).mkString(",")))
 				classpath
 			}
