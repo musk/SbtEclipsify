@@ -44,20 +44,23 @@ case class ProjectFile(ref: ProjectRef, state: State) {
 	
 	val log = logger(state)
 	val extracted = Project.extract(state)
-	implicit val structure = extracted.structure
+	val structure = extracted.structure 
 	val project = Project.getProject(ref, structure)
-	val name = setting(ref, Keys.name, Compile).getOrElse("No name available")
+	
+	def get[A] = setting[A](structure)_
+	
+	val name = get(ref, Keys.name, Compile).getOrElse("No name available")
 
 	/**
 	 * Writes the .project file to the file system
 	 * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>
 	 */
 	def writeFile: Option[String] = {
-		lazy val nature = setting(ref, Eclipsify.nature, Compile).getOrElse(ProjectType.Scala)
+		lazy val nature = get(ref, Eclipsify.nature, Compile).getOrElse(ProjectType.Scala)
 
 		lazy val projectContent = <projectDescription>
 			<name>{ name }</name>
-			<comment>{ setting(ref, Eclipsify.description, Compile).getOrElse("") }</comment>
+			<comment>{ get(ref, Eclipsify.description, Compile).getOrElse("") }</comment>
 			<projects>{ createSubProjects }</projects>
 			<buildSpec>
 				{ nature.builder.map(b => <buildCommand><name>{ b }</name></buildCommand>) }
@@ -69,7 +72,7 @@ case class ProjectFile(ref: ProjectRef, state: State) {
 
 			def createSubProjects = ""
 
-		setting(ref, Keys.baseDirectory, Compile) match {
+		get(ref, Keys.baseDirectory, Compile) match {
 			case Some(s) =>
 				val projectFile = (Path(s) / ".project").getAbsolutePath
 				try {

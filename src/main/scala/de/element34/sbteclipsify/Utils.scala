@@ -34,5 +34,9 @@ import sbt._
 
 object Utils {
 	
-	def setting[T](ref: ProjectRef, key: SettingKey[T], configuration: Configuration)(implicit structure: Load.BuildStructure): Option[T] = key in (ref, configuration) get structure.data
+	def setting[T](structure: Load.BuildStructure)(ref: ProjectRef, key: SettingKey[T], configuration: Configuration): Option[T] = key in (ref, configuration) get structure.data
+	
+	def evaluate[A](state: State, structure: Load.BuildStructure)(ref: ProjectRef, key: TaskKey[A], config: Configuration) =
+		EvaluateTask.evaluateTask(structure, key in config, state, ref, false, EvaluateTask.SystemProcessors)
+	
 }
