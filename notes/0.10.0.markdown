@@ -1,0 +1,6 @@
+### Ported to sbt 0.10.1
+
+* Complete rewrite to bring the functionality of sbteclipsify to sbt 0.10.0
+* support for different project natures
+* no dependencies other then sbt and scala-library 
+* finally true multiproject support
