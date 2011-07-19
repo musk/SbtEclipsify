@@ -31,7 +31,7 @@ package de.element34.sbteclipsify
 import scala.xml._
 import sbt._
 
-import java.io.File
+import java.io.{ File, FileFilter => JFileFilter }
 
 /**
  * Gathers the structural information for a .classpath file.
@@ -63,42 +63,70 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 
 			val cpEntries: Set[ClasspathEntry] = {
 
-				val compileExcludes = setting(ref, Keys.defaultExcludes, Compile).getOrElse(NothingFilter)
-				val testExcludes = setting(ref, Keys.defaultExcludes, Test).getOrElse(NothingFilter)
-				val runtimeExcludes = setting(ref, Keys.defaultExcludes, Runtime).getOrElse(NothingFilter)
-				val provExcludes = setting(ref, Keys.defaultExcludes, Provided).getOrElse(NothingFilter)
-				val exclude: FileFilter = compileExcludes && testExcludes && runtimeExcludes && provExcludes
+					def filter(key: SettingKey[FileFilter], conf: Seq[Configuration]): FileFilter = conf.map(c => { setting(ref, key, c).getOrElse(NothingFilter) }).foldLeft(NothingFilter: FileFilter)(_ && _)
+					def evaluate[A](ref: ProjectRef, key: TaskKey[A], config: Configuration)(implicit state: State, structure: Load.BuildStructure) =
+						EvaluateTask.evaluateTask(structure, key in config, state, ref, false, EvaluateTask.SystemProcessors)
+					def artifactKey(module: ModuleID, name: String, typ: String) = "%s %s %s".format(module, name, typ)
+				val artifactMap = evaluate(ref, Keys.updateClassifiers, Compile).flatMap(_.toEither match {
+					case Right(t) =>
+						Some(t.configurations.flatMap(c => {
+							log.debug("Configuration for %s".format(c.configuration))
+							c.modules.flatMap(m => {
+								m.artifacts.map(_ match {
+									case (Artifact(name, typ, extension, classifier, configurations, url, extraAttributes), f) =>
+										log.debug("%n\tname=%s,%n\ttype=%s,%n\textension=%s,%n\tclassifier=%s,%n\tconfigurations=%s,%n\turl=%s,%n\textraAttributes=%s%n\tfile=%s".
+											format(name, typ, extension, classifier, configurations, url, extraAttributes, f))
+										(artifactKey(m.module, name, typ), f)
+									case _ =>
+										("", new File(""))
+								})
+							})
+						}).toMap)
+					case _ =>
+						log.debug("Update classifieres failed!")
+						None
+				}).getOrElse(Map.empty[String, File])
 
-					//					def processSrc(sources: Seq[Classpath]): Set[ClasspathEntry] = sources.map(file => {
-					//						log.debug("Processing %s for classpathentry!".format(file))
-					//						ClasspathEntry(Source, IO.relativize(projectBase, file).getOrElse(file.getAbsolutePath))
-					//					}).toSet
-					implicit def convAF2F(file: Attributed[File]): File = file.data
-					implicit def noConv(file: File): File = file
+				log.debug("Artifact Map %s".format(artifactMap))
+				val confs = List(Test, Provided, Runtime, Compile)
+				val exclude: FileFilter = filter(Keys.defaultExcludes, confs) && filter(Keys.sourceFilter, confs)
 
-					def createClasspathEntry[A](kind: Kind, files: Seq[A])(implicit conv: A => File) = files.map(conv).filterNot(f => {
+					def createClasspathEntry(kind: Kind)(file: Attributed[File]): Option[ClasspathEntry] = {
+						val f = file.data
 						val result = f.getName == ScalaLib || exclude.accept(f)
 						log.debug("%s filtered %b".format(f, result))
-						result
-					}).map(f => {
-						ClasspathEntry(kind, IO.relativize(projectBase, f).getOrElse(f.getAbsolutePath))
-					}).toSet
+						/*
+						(artifact: Artifact(scala-library,jar,jar,None,List(),None,Map()), 
+						module: org.scala-lang:scala-library:2.8.1, configuration: compile-internal)
+						 */
+						file.metadata.entries.foreach(entry => {
+							log.debug("key=%s, value=%s".format(entry.key, entry.value))
+						})
+						log.debug("MetaData: m=%s".format(file.metadata))
 
-					def processResult[A](kind: Kind)(res: Result[Seq[A]])(implicit conv: A => File): Set[ClasspathEntry] = res.toEither match {
+						if (result) {
+							val ak: Option[String] = file.metadata.get(AttributeKey[Artifact]("artifact")).flatMap(a => {
+								file.metadata.get(AttributeKey[ModuleID]("module")).flatMap(m => {
+									artifactMap.get(artifactKey(m, a.name, "src")).map(_.getAbsolutePath)
+								})
+							})
+							log.debug("AK=%s".format(ak))
+							Some(ClasspathEntry(kind, IO.relativize(projectBase, f).getOrElse(f.getAbsolutePath), ak))
+						} else
+							None
+					}
+
+					def processResult[A](classpathBuilder: Attributed[File] => Option[ClasspathEntry])(conv: A => Attributed[File])(res: Result[Seq[A]]): Set[ClasspathEntry] = res.toEither match {
 						case Right(files) =>
-							createClasspathEntry(kind, files)(conv)
+							files.map(f => classpathBuilder(conv(f))).filter(_ match { case Some(_) => true; case None => false }).map(_.get).toSet
 						case Left(inc) =>
-							log.error("Unable to resolve compile dependencies! %s".format(inc))
+							log.error("Unable to resolve dependencies! %s".format(inc))
 							Set.empty[ClasspathEntry]
 					}
 
-					def evaluate[A](ref: ProjectRef, key: TaskKey[A], config: Configuration)(implicit state: State, structure: Load.BuildStructure) =
-						EvaluateTask.evaluateTask(structure, key in config, state, ref, false, EvaluateTask.SystemProcessors)
+				val procLib = processResult[Attributed[File]](createClasspathEntry(Library)_)(f => f) _
+				val procSrc = processResult[File](createClasspathEntry(Source)_)(f => Attributed.blank(f))_
 
-				val procLib = processResult[Attributed[File]](Library) _
-				val procSrc = processResult[File](Source) _
-
-				// TODO need to find a way to process files as attributed files
 				val sources = evaluate(ref, Keys.sources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
 				val resources = evaluate(ref, Keys.resources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
 
