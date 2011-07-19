@@ -48,10 +48,10 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 	val log = logger(state)
 	val extracted = Project.extract(state)
 	val structure = extracted.structure
-	
+
 	def get[A] = setting[A](structure)_
 	def eval[A] = evaluate[A](state, structure)_
-	
+
 	val name = get(ref, Keys.name, Compile).getOrElse("Unable to determine name")
 	val baseDir = get(ref, Keys.baseDirectory, Compile)
 
@@ -66,11 +66,12 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 		val result = f.getName == ScalaLib || exclude.accept(f)
 		log.debug("%s filtered %b".format(f, result))
 		if (result) {
-			val ak: Option[String] = file.metadata.get(AttributeKey[Artifact]("artifact")).flatMap(a => {
-				file.metadata.get(AttributeKey[ModuleID]("module")).flatMap(m => {
+			val ak: Option[String] = file.metadata.get(Keys.artifact.key).flatMap(a => {
+				file.metadata.get(Keys.moduleID.key).flatMap(m => {
 					artifacts.get(artifactKey(m, a.name, "src")).flatMap(_.map(_.getAbsolutePath))
 				})
 			})
+			// TODO add outputdirecotry classesDirectory testClassesDirectory
 			Some(ClasspathEntry(kind, IO.relativize(projectBase, f).getOrElse(f.getAbsolutePath), ak))
 		} else
 			None
@@ -84,7 +85,17 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 			Set.empty[ClasspathEntry]
 	}
 
-	def processProjectDependencies: Set[ClasspathEntry] = Set.empty[ClasspathEntry]
+	def processProjectDependencies(projectBase: File): Set[ClasspathEntry] = {
+		Project.getProject(ref, structure).map(p => {
+			p.dependencies.map(d => {
+				Project.getProject(d.project, structure).map(x => {
+					val path = IO.relativize(projectBase, x.base).getOrElse(x.base.getAbsolutePath)
+					log.debug("BasePath %s, Path %s".format(projectBase, path))
+					ClasspathEntry(Source, path, false)
+				})
+			}).filter(_ match { case Some(_) => true; case None => false }).map(_.get).toSet
+		}).getOrElse(Set.empty[ClasspathEntry])
+	}
 
 	/**
 	 * writes the .classpath file to the project root
@@ -112,8 +123,6 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 						None
 				}).getOrElse(Map.empty[String, Option[File]])
 
-				log.debug("Artifact Map %s".format(artifactMap))
-
 				val procLib = processResult[Attributed[File]](createClasspathEntry(Library, projectBase, artifactMap)_)(f => f) _
 				val procSrc = processResult[File](createClasspathEntry(Source, projectBase, artifactMap)_)(f => Attributed.blank(f))_
 
@@ -140,8 +149,8 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 					providedJars ++
 					sources ++
 					resources ++
-					processProjectDependencies
-				log.debug("Finding classpathentries%n%s".format(classpath.map(n => n.path + " - " + n.kind).mkString("\t", "\t\n", "")))
+					processProjectDependencies(projectBase)
+				log.debug("Classpath entries:%n%s".format(classpath.map(n => n.path + " - " + n.kind).mkString("\t", "\n\t", "")))
 				classpath
 			}
 
