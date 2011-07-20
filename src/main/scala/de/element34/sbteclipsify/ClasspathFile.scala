@@ -28,7 +28,7 @@
  */
 package de.element34.sbteclipsify
 
-import scala.xml._
+import scala.xml._ 
 import sbt._
 
 import java.io.{ File, FileFilter => JFileFilter }
@@ -37,33 +37,31 @@ import java.io.{ File, FileFilter => JFileFilter }
  * Gathers the structural information for a .classpath file.
  * @param project The sbt project for which the .classpath file is created
  * @param log The logger from the sbt project
- *
- * TODO add support for filters
  */
-case class ClasspathFile(ref: ProjectRef, state: State) {
+case class ClasspathFile(ctx: ProjectCtx) {
 	import CommandSupport.logger
 	import Keys._
 	import Utils._
 
-	val log = logger(state)
-	val extracted = Project.extract(state)
+	val log = logger(ctx.state)
+	val extracted = Project.extract(ctx.state)
 	val structure = extracted.structure
 
 	def get[A] = setting[A](structure)_
-	def eval[A] = evaluate[A](state, structure)_
+	def eval[A] = evaluate[A](ctx.state, structure)_
 
-	val name = get(ref, Keys.name, Compile).getOrElse("Unable to determine name")
-	val baseDir = get(ref, Keys.baseDirectory, Compile)
+	val name = get(ctx.ref, Keys.name, Compile).getOrElse("Unable to determine name")
+	val baseDir = get(ctx.ref, Keys.baseDirectory, Compile)
 
 	val ScalaLib = "scala-library.jar"
 	val confs = List(Test, Provided, Runtime, Compile)
 
-	def filter(key: SettingKey[FileFilter], conf: Seq[Configuration]): FileFilter = conf.map(c => { get(ref, key, c).getOrElse(NothingFilter) }).foldLeft(NothingFilter: FileFilter)(_ && _)
+	def filter(key: SettingKey[FileFilter], conf: Seq[Configuration]): FileFilter = conf.map(c => { get(ctx.ref, key, c).getOrElse(NothingFilter) }).foldLeft(NothingFilter: FileFilter)(_ && _)
 	def artifactKey(module: ModuleID, name: String, typ: String) = "%s %s %s".format(module, name, typ)
-	def createClasspathEntry(kind: Kind, projectBase: File, artifacts: Map[String, Option[File]])(file: Attributed[File]): Option[ClasspathEntry] = {
+	def createClasspathEntry(kind: Kind, base: File, artifacts: Map[String, Option[File]])(file: Attributed[File]): Option[ClasspathEntry] = {
 		val exclude: FileFilter = filter(Keys.defaultExcludes, confs) && filter(Keys.sourceFilter, confs)
 		val f = file.data
-		val result = f.getName == ScalaLib || exclude.accept(f)
+		val result = !(f.getName == ScalaLib || exclude.accept(f))
 		log.debug("%s filtered %b".format(f, result))
 		if (result) {
 			val ak: Option[String] = file.metadata.get(Keys.artifact.key).flatMap(a => {
@@ -72,7 +70,7 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 				})
 			})
 			// TODO add outputdirecotry classesDirectory testClassesDirectory
-			Some(ClasspathEntry(kind, IO.relativize(projectBase, f).getOrElse(f.getAbsolutePath), ak))
+			Some(ClasspathEntry(kind, IO.relativize(base, f).getOrElse(f.getAbsolutePath), ak))
 		} else
 			None
 	}
@@ -85,13 +83,12 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 			Set.empty[ClasspathEntry]
 	}
 
-	def processProjectDependencies(projectBase: File): Set[ClasspathEntry] = {
-		Project.getProject(ref, structure).map(p => {
+	def processProjectDependencies(baseDir: File): Set[ClasspathEntry] = {
+		Project.getProject(ctx.ref, structure).map(p => {
 			p.dependencies.map(d => {
 				Project.getProject(d.project, structure).map(x => {
-					val path = IO.relativize(projectBase, x.base).getOrElse(x.base.getAbsolutePath)
-					log.debug("BasePath %s, Path %s".format(projectBase, path))
-					ClasspathEntry(Source, path, false)
+					val path = IO.relativize(baseDir, x.base).getOrElse(x.base.getAbsolutePath)
+					ClasspathEntry(Source, "/" + path, false)
 				})
 			}).filter(_ match { case Some(_) => true; case None => false }).map(_.get).toSet
 		}).getOrElse(Set.empty[ClasspathEntry])
@@ -102,11 +99,11 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 	 * @return <code>Some(error)</code>, where error designates the error message to display, when an error occures else returns <code>None</code>
 	 */
 	def writeFile: Option[String] = {
-		baseDir.map(projectBase => {
+		baseDir.map(bd => {
 
 			val cpEntries: Set[ClasspathEntry] = {
 
-				val artifactMap: Map[String, Option[File]] = eval(ref, Keys.updateClassifiers, Compile).flatMap(_.toEither match {
+				val artifactMap: Map[String, Option[File]] = eval(ctx.ref, Keys.updateClassifiers, Compile).flatMap(_.toEither match {
 					case Right(t) =>
 						Some(t.configurations.flatMap(c => {
 							c.modules.flatMap(m => {
@@ -123,21 +120,21 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 						None
 				}).getOrElse(Map.empty[String, Option[File]])
 
-				val procLib = processResult[Attributed[File]](createClasspathEntry(Library, projectBase, artifactMap)_)(f => f) _
-				val procSrc = processResult[File](createClasspathEntry(Source, projectBase, artifactMap)_)(f => Attributed.blank(f))_
+				val procLib = processResult[Attributed[File]](createClasspathEntry(Library, bd, artifactMap)_)(f => f) _
+				val procSrc = processResult[File](createClasspathEntry(Source, bd, artifactMap)_)(f => Attributed.blank(f))_
 
-				val sources = eval(ref, Keys.sources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
-				val resources = eval(ref, Keys.resources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
+				val sources = eval(ctx.ref, Keys.sources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
+				val resources = eval(ctx.ref, Keys.resources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
 
-				val compileJars = eval(ref, Keys.unmanagedClasspath, Compile).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
-				val testJars = eval(ref, Keys.unmanagedClasspath, Test).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
-				val runtimeJars = eval(ref, Keys.unmanagedClasspath, Runtime).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
-				val providedJars = eval(ref, Keys.unmanagedClasspath, Provided).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val compileJars = eval(ctx.ref, Keys.unmanagedClasspath, Compile).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val testJars = eval(ctx.ref, Keys.unmanagedClasspath, Test).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val runtimeJars = eval(ctx.ref, Keys.unmanagedClasspath, Runtime).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val providedJars = eval(ctx.ref, Keys.unmanagedClasspath, Provided).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
 
-				val clibs = eval(ref, Keys.externalDependencyClasspath, Compile).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
-				val tlibs = eval(ref, Keys.externalDependencyClasspath, Test).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
-				val rlibs = eval(ref, Keys.externalDependencyClasspath, Runtime).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
-				val plibs = eval(ref, Keys.externalDependencyClasspath, Provided).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val clibs = eval(ctx.ref, Keys.externalDependencyClasspath, Compile).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val tlibs = eval(ctx.ref, Keys.externalDependencyClasspath, Test).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val rlibs = eval(ctx.ref, Keys.externalDependencyClasspath, Runtime).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
+				val plibs = eval(ctx.ref, Keys.externalDependencyClasspath, Provided).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
 
 				val classpath = clibs ++
 					tlibs ++
@@ -149,8 +146,8 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 					providedJars ++
 					sources ++
 					resources ++
-					processProjectDependencies(projectBase)
-				log.debug("Classpath entries:%n%s".format(classpath.map(n => n.path + " - " + n.kind).mkString("\t", "\n\t", "")))
+					processProjectDependencies(ctx.projectBase)
+				log.debug("Classpath entries:%n%s".format(classpath.map(n => n.path + " ---> " + n.kind).mkString("\t", "\n\t", "")))
 				classpath
 			}
 
@@ -158,7 +155,7 @@ case class ClasspathFile(ref: ProjectRef, state: State) {
 				{ (NodeSeq.Empty /: cpEntries)(_ ++ _.toNodeSeq) }
 			</classpath>
 
-			val classpathFile = (Path(projectBase) / ".classpath").getAbsolutePath
+			val classpathFile = (Path(bd) / ".classpath").getAbsolutePath
 			try {
 				XML.save(classpathFile, classpathContent, "utf-8", true)
 				None

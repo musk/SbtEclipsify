@@ -28,7 +28,9 @@
  */
 package de.element34.sbteclipsify
 
-import sbt._
+import sbt._ 
+import sbt.complete._
+import sbt.complete.Parsers._
 
 /**
  * Defines the plugin with the "eclipse" task for sbt
@@ -41,27 +43,39 @@ object Eclipsify extends Plugin {
 
 	val description = SettingKey[String]("description")
 	val nature = SettingKey[ProjectNature]("nature")
-
-	lazy val eclipse: Command = Command.command("eclipse") { state =>
+	
+	lazy val argFormat = (Space ~> "jar-deps" | Space ~> "with-source").*
+	
+	lazy val eclipse = Command("eclipse")(_ => argFormat) { (state, args) =>
 		val log = logger(state)
 
+		log.debug("Args=%s".format(args))
+		
 		val currProject = Project.current(state)
 		log.debug("Current project: %s" format (currProject))
 
 		val extracted = Project.extract(state)
 		val structure = extracted.structure
 
-		for (ref <- structure.allProjectRefs) {
-
-			val name = Keys.name in (ref, Compile) get structure.data
-			ProjectFile(ref, state).writeFile match {
-				case None => log.info("written .project for %s" format name)
-				case Some(err) => log.error("Unable to write .project for %s due to %s".format(name, err))
+		def get[A] = Utils.setting[A](structure)_
+		
+		get(currProject, Keys.baseDirectory, Compile).map(baseDir => {
+		
+			for (ref <- structure.allProjectRefs) {
+	
+				val name = get(ref, Keys.name, Compile)
+				ProjectFile(ProjectCtx(baseDir, ref, state)).writeFile match {
+					case None => log.info("written .project for %s" format name)
+					case Some(err) => log.error("Unable to write .project for %s due to %s".format(name, err))
+				}
+				ClasspathFile(ProjectCtx(baseDir, ref, state, args)).writeFile match {
+					case None => log.info("written .classpath for %s" format name)
+					case Some(err) => log.error("Unable to write .classpath for %s due to %s".format(name, err))
+				}
 			}
-			ClasspathFile(ref, state).writeFile match {
-				case None => log.info("written .classpath for %s" format name)
-				case Some(err) => log.error("Unable to write .classpath for %s due to %s".format(name, err))
-			}
+		}) match {
+			case None => log.error("Base directory for %s cannot be resolved!".format(get(currProject, Keys.name, Compile).getOrElse("<Unresolved>")))
+			case _ => log.info("You may now import your projects in Eclipse")
 		}
 		state
 	}

@@ -29,60 +29,9 @@
 package de.element34.sbteclipsify
 
 import sbt._
-
 import java.io.File
-import java.nio.charset.Charset._
-
-import scala.xml._
 
 /**
- * Defines the structure for a .project file.
+ * Context object to easily pass context information to dependent classes
  */
-case class ProjectFile(ctx: ProjectCtx) {
-	import CommandSupport.logger
-	import Utils._
-	
-	val log = logger(ctx.state)
-	val extracted = Project.extract(ctx.state)
-	val structure = extracted.structure 
-	val project = Project.getProject(ctx.ref, structure)
-	
-	def get[A] = setting[A](structure)_
-	
-	val name = get(ctx.ref, Keys.name, Compile).getOrElse("No name available")
-
-	/**
-	 * Writes the .project file to the file system
-	 * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>
-	 */
-	def writeFile: Option[String] = {
-		lazy val nature = get(ctx.ref, Eclipsify.nature, Compile).getOrElse(ProjectType.Scala)
-
-		lazy val projectContent = <projectDescription>
-			<name>{ name }</name>
-			<comment>{ get(ctx.ref, Eclipsify.description, Compile).getOrElse("") }</comment>
-			<projects>{ createSubProjects }</projects>
-			<buildSpec>
-				{ nature.builder.map(b => <buildCommand><name>{ b }</name></buildCommand>) }
-			</buildSpec>
-			<natures>
-				{ nature.nature.map(n => <nature>{ n }</nature>) }
-			</natures>
-		</projectDescription>
-
-			def createSubProjects = ""
-
-		get(ctx.ref, Keys.baseDirectory, Compile) match {
-			case Some(s) =>
-				val projectFile = (Path(s) / ".project").getAbsolutePath
-				try {
-					XML.save(projectFile, projectContent, "utf-8", true)
-					None
-				} catch {
-					case e => Some("Error writing file %s:%n%s".format(projectFile, e))
-				}
-			case None => Some("Unable to determine base directory for project %s" format name)
-		}
-	}
-}
-
+case class ProjectCtx(projectBase: File, ref: ProjectRef, state: State, args: Seq[String] = Nil)

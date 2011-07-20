@@ -7,6 +7,7 @@ If you need to use this plugin with sbt version prior to 0.10.0 then you need to
 Just like sbt this software is distributed under the BSD License (http://www.opensource.org/licenses/bsd-license.php).
 
 ## Features
+ 
  * Capable of generating projects for 
   * Android
   * Scala
@@ -14,7 +15,7 @@ Just like sbt this software is distributed under the BSD License (http://www.ope
   * SbtEclipseIntegration
   * more to come soon...
  * Only depends on sbt and scala-library no dependencies hell when mixing with other plugins.
- * Open for anybody to contribute on [1]
+ * Open for anybody to contribute on [sbteclipsify github][1]
  * true multiproject support
 
 ## Installing the plugin
@@ -37,18 +38,21 @@ The plugin only adds the scala plugin nature to the project. The scala version u
 ### Building
 SbtEclipsify uses oh wonder sbt (0.10.1) as the build tool.
 After cloning it from git, start sbt and do a `update `publish-local. This should compile all sources, run all tests and install the most recent version of the plugin to your local repo.
+
 See `Installing the Plugin for instruction of installing it in your projects.
 
 ## Setup of the plugin
 The plugin can be configured for the type of project you want to generate. This can be achived by specifing the nature your project has. For this purpose the plugin introduces a new setting
 SettingsKey[de.element34.sbteclipsify.ProjectNature]("nature")
+
 All available natures can be viewed in the corresponding source file for convinience the following natures are predefined in de.element34.sbteclipsify.ProjectType
-  Java => A simple java project
-  Scala => A Scala project this is the default
-  Android => A Android plugin using Java
-  ScalaAndroid => A Android plugin using Scala
-  Plugin => a Eclipse plugin project using Java
-  ScalaPlugin => a Eclipse plugin project using Scala
+ 
+ * Java => A simple java project
+ * Scala => A Scala project this is the default
+ * Android => A Android plugin using Java
+ * ScalaAndroid => A Android plugin using Scala
+ * Plugin => a Eclipse plugin project using Java
+ * ScalaPlugin => a Eclipse plugin project using Scala
 
 To add simply add the following line to your build.sbt file
  nature := de.element34.sbteclipsify.ProjectType.Java
@@ -63,7 +67,7 @@ Calling it will generate a .project and a .classpathfile in the rootdirectory of
 Now all you need to do is import the Project into your Eclipse workspace as an existing Project and everything should work.
 
 ## Reporting issues
-Issues can be reported at [1]
+Issues can be reported at [sbteclipsify github][1]
 
 ## Known Issues
 None known yet ...
