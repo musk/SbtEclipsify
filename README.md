@@ -22,9 +22,9 @@ Just like sbt this software is distributed under the BSD License (http://www.ope
 To use the plugin you can either define it globally making it available to all sbt builds or you an install it local to your project.
 Simply add the following dependency to your libraryDependecies
 
- libraryDependencies <<= (libraryDependencies, sbtVersion) { (deps, version) => 
-        deps :+ ("de.element34" %% "sbt-eclipsify" % "0.10.0-SNAPSHOT")
- }
+    libraryDependencies <+= (libraryDependencies, sbtVersion) { (deps, version) => 
+    	"de.element34" %% "sbt-eclipsify" % "0.10.0-SNAPSHOT"
+    }
 
 For setting up the plugin see "Using the Plugin in your own project" below.
 
