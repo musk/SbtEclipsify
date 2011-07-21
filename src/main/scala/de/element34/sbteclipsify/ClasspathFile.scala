@@ -28,7 +28,7 @@
  */
 package de.element34.sbteclipsify
 
-import scala.xml._ 
+import scala.xml._
 import sbt._
 
 import java.io.{ File, FileFilter => JFileFilter }
@@ -58,7 +58,7 @@ case class ClasspathFile(ctx: ProjectCtx) {
 
 	def filter(key: SettingKey[FileFilter], conf: Seq[Configuration]): FileFilter = conf.map(c => { get(ctx.ref, key, c).getOrElse(NothingFilter) }).foldLeft(NothingFilter: FileFilter)(_ && _)
 	def artifactKey(module: ModuleID, name: String, typ: String) = "%s %s %s".format(module, name, typ)
-	def createClasspathEntry(kind: Kind, base: File, artifacts: Map[String, Option[File]])(file: Attributed[File]): Option[ClasspathEntry] = {
+	def createClasspathEntry(kind: Kind, base: File, artifacts: Map[String, Option[File]], outputPath: Option[File] = None)(file: Attributed[File]): Option[ClasspathEntry] = {
 		val exclude: FileFilter = filter(Keys.defaultExcludes, confs) && filter(Keys.sourceFilter, confs)
 		val f = file.data
 		val result = !(f.getName == ScalaLib || exclude.accept(f))
@@ -121,10 +121,13 @@ case class ClasspathFile(ctx: ProjectCtx) {
 				}).getOrElse(Map.empty[String, Option[File]])
 
 				val procLib = processResult[Attributed[File]](createClasspathEntry(Library, bd, artifactMap)_)(f => f) _
-				val procSrc = processResult[File](createClasspathEntry(Source, bd, artifactMap)_)(f => Attributed.blank(f))_
+					def procSrc(outputPath: Option[File] = None) = processResult[File](createClasspathEntry(Source, bd, artifactMap, outputPath)_)(f => Attributed.blank(f))_
 
-				val sources = eval(ctx.ref, Keys.sources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
-				val resources = eval(ctx.ref, Keys.resources, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
+				val outputTest = get(ctx.ref, Keys.classDirectory, Test)
+				val sources = eval(ctx.ref, Keys.sources, Compile).map(procSrc()(_)).getOrElse(Set.empty[ClasspathEntry])
+				val sourcesTest = eval(ctx.ref, Keys.sources, Test).map(procSrc(outputTest)(_)).getOrElse(Set.empty[ClasspathEntry])
+				val resources = eval(ctx.ref, Keys.resources, Compile).map(procSrc()(_)).getOrElse(Set.empty[ClasspathEntry])
+				val resourcesTest = eval(ctx.ref, Keys.resources, Test).map(procSrc(outputTest)(_)).getOrElse(Set.empty[ClasspathEntry])
 
 				val compileJars = eval(ctx.ref, Keys.unmanagedClasspath, Compile).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
 				val testJars = eval(ctx.ref, Keys.unmanagedClasspath, Test).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
@@ -136,6 +139,10 @@ case class ClasspathFile(ctx: ProjectCtx) {
 				val rlibs = eval(ctx.ref, Keys.externalDependencyClasspath, Runtime).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
 				val plibs = eval(ctx.ref, Keys.externalDependencyClasspath, Provided).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
 
+				val output = get(ctx.ref, Keys.classDirectory, Compile).map(cd => {
+						Set(ClasspathEntry(Output, IO.relativize(bd, cd).getOrElse(cd.getAbsolutePath)))
+					}).getOrElse(Set.empty[ClasspathEntry])
+					
 				val classpath = clibs ++
 					tlibs ++
 					rlibs ++
@@ -145,8 +152,11 @@ case class ClasspathFile(ctx: ProjectCtx) {
 					runtimeJars ++
 					providedJars ++
 					sources ++
+					sourcesTest ++
 					resources ++
-					processProjectDependencies(ctx.projectBase)
+					resourcesTest ++
+					processProjectDependencies(ctx.projectBase) ++
+					output
 				log.debug("Classpath entries:%n%s".format(classpath.map(n => n.path + " ---> " + n.kind).mkString("\t", "\n\t", "")))
 				classpath
 			}

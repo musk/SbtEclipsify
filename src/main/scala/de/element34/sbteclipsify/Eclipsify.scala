@@ -39,7 +39,7 @@ object Eclipsify extends Plugin {
 	import CommandSupport.logger
 	import Keys._
 
-	override lazy val settings = Seq(commands += eclipse)
+	override lazy val settings = Seq(commands += eclipse) 
 
 	val description = SettingKey[String]("description")
 	val nature = SettingKey[ProjectNature]("nature")
