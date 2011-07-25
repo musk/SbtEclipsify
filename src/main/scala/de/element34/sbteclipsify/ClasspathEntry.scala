@@ -108,15 +108,6 @@ case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], out
  * Factory providing convenience methods for creating <code>ClasspathEntry</code>
  */
 object ClasspathEntry {
-	def apply(kind: Kind, path: String) = new ClasspathEntry(kind, path, None, None, None, EmptyFilter, Nil)
-	def apply(kind: Kind, path: String, combineAccessRule: Boolean) = new ClasspathEntry(kind, path, None, None, Some(combineAccessRule), EmptyFilter, Nil) 
-	def apply(kind: Kind, path: String, srcPath: Option[String]) = new ClasspathEntry(kind, path, srcPath, None, None, EmptyFilter, Nil)
-	def apply(kind: Kind, path: String, srcPath: String) = new ClasspathEntry(kind, path, Some(srcPath), None, None, EmptyFilter, Nil)
-	def apply(kind: Kind, path: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, None, None, filter, Nil)
-	def apply(kind: Kind, path: String, outputPath: Option[String], filter: FilterChain) = new ClasspathEntry(kind, path, None, outputPath, None, filter, Nil)
-	def apply(kind: Kind, path: String, outputPath: String, filter: FilterChain) = new ClasspathEntry(kind, path, None, Some(outputPath), None, filter, Nil)
-	def apply(kind: Kind, path: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, None, EmptyFilter, attributes)
-	def apply(kind: Kind, path: String, srcPath: String, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcPath), None, None, EmptyFilter, attributes)
-	def apply(kind: Kind, path: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, None, None, None, filter, attributes)
-	def apply(kind: Kind, path: String, srcPath: String, filter: FilterChain, attributes: List[Tuple2[String, String]]) = new ClasspathEntry(kind, path, Some(srcPath), None, None, filter, attributes)
+	def apply(kind: Kind, path: String, srcPath: Option[String] = None, outputPath: Option[String] = None, combineAccessRule: Option[Boolean] = None) =
+		new ClasspathEntry(kind, path, srcPath, outputPath, combineAccessRule, EmptyFilter, Nil)
 }

@@ -42,6 +42,7 @@ case class ClasspathFile(ctx: ProjectCtx) {
 	import CommandSupport.logger
 	import Keys._
 	import Utils._
+	import Arguments._
 
 	val log = logger(ctx.state)
 	val extracted = Project.extract(ctx.state)
@@ -61,16 +62,15 @@ case class ClasspathFile(ctx: ProjectCtx) {
 	def createClasspathEntry(kind: Kind, base: File, artifacts: Map[String, Option[File]], outputPath: Option[File] = None)(file: Attributed[File]): Option[ClasspathEntry] = {
 		val exclude: FileFilter = filter(Keys.defaultExcludes, confs) && filter(Keys.sourceFilter, confs)
 		val f = file.data
-		val result = !(f.getName == ScalaLib || exclude.accept(f))
+		val result = f.getName == ScalaLib || exclude.accept(f)
 		log.debug("%s filtered %b".format(f, result))
-		if (result) {
+		if (!result) {
 			val ak: Option[String] = file.metadata.get(Keys.artifact.key).flatMap(a => {
 				file.metadata.get(Keys.moduleID.key).flatMap(m => {
 					artifacts.get(artifactKey(m, a.name, "src")).flatMap(_.map(_.getAbsolutePath))
 				})
 			})
-			// TODO add outputdirecotry classesDirectory testClassesDirectory
-			Some(ClasspathEntry(kind, IO.relativize(base, f).getOrElse(f.getAbsolutePath), ak))
+			Some(ClasspathEntry(kind, IO.relativize(base, f).getOrElse(f.getAbsolutePath), ak, outputPath.map(f => IO.relativize(base, f).getOrElse(f.getAbsolutePath))))
 		} else
 			None
 	}
@@ -83,13 +83,62 @@ case class ClasspathFile(ctx: ProjectCtx) {
 			Set.empty[ClasspathEntry]
 	}
 
+	def loadArtifactMap(ctx: ProjectCtx): Map[String, Option[File]] = if (ctx.args.contains(WITH_SOURCES)) {
+		log.debug("Getting sources!")
+		confs.map(c => {
+			eval(ctx.ref, Keys.updateClassifiers, Compile).flatMap(_.toEither match {
+				case Right(t) =>
+					Some(t.configurations.flatMap(c => {
+						c.modules.flatMap(m => {
+							m.artifacts.map(_ match {
+								case (Artifact(name, typ, extension, classifier, configurations, url, extraAttributes), f) =>
+									(artifactKey(m.module, name, typ), Some(f))
+								case _ =>
+									("", None)
+							})
+						})
+					}).toMap)
+				case _ =>
+					log.debug("Update classifieres failed!")
+					None
+			}).getOrElse(Map.empty)
+		}).foldLeft(Map.empty[String, Option[File]])(_ ++ _)
+	} else {
+		log.debug("Skipping source retrieval!")
+		Map.empty
+	}
+
 	def processProjectDependencies(baseDir: File): Set[ClasspathEntry] = {
 		Project.getProject(ctx.ref, structure).map(p => {
 			p.dependencies.map(d => {
-				Project.getProject(d.project, structure).map(x => {
-					val path = IO.relativize(baseDir, x.base).getOrElse(x.base.getAbsolutePath)
-					ClasspathEntry(Source, "/" + path, false)
-				})
+				if (ctx.args.contains(JAR_DEPS)) {
+
+						def createPkg[A](key: TaskKey[A], error: => String): Option[A] = eval(d.project, key, Compile).flatMap(_.toEither match {
+							case Right(f) =>
+								Some(f)
+							case Left(f) =>
+								log.error(error)
+								None
+						})
+
+					log.debug("Creating package artifact for %s".format(d.project.project))
+					val pkgBin = createPkg(Keys.packageBin, "Unable to create binary package for %s".format(d.project.project))
+
+					val pkgSrc = if (ctx.args.contains(WITH_SOURCES)) {
+						log.debug("Creating source package artifact for %s".format(d.project.project))
+						createPkg(Keys.packageSrc, "Unable to create source package for %s".format(d.project.project))
+					} else None
+
+					pkgBin.map(f =>
+						ClasspathEntry(Library,
+							f.getAbsolutePath,
+							pkgSrc.map(_.getAbsolutePath)))
+				} else {
+					Project.getProject(d.project, structure).map(x => {
+						val path = IO.relativize(baseDir, x.base).getOrElse(x.base.getAbsolutePath)
+						ClasspathEntry(kind = Source, path = if (path.startsWith("/")) path else ("/" + path), combineAccessRule = Some(false))
+					})
+				}
 			}).filter(_ match { case Some(_) => true; case None => false }).map(_.get).toSet
 		}).getOrElse(Set.empty[ClasspathEntry])
 	}
@@ -103,25 +152,13 @@ case class ClasspathFile(ctx: ProjectCtx) {
 
 			val cpEntries: Set[ClasspathEntry] = {
 
-				val artifactMap: Map[String, Option[File]] = eval(ctx.ref, Keys.updateClassifiers, Compile).flatMap(_.toEither match {
-					case Right(t) =>
-						Some(t.configurations.flatMap(c => {
-							c.modules.flatMap(m => {
-								m.artifacts.map(_ match {
-									case (Artifact(name, typ, extension, classifier, configurations, url, extraAttributes), f) =>
-										(artifactKey(m.module, name, typ), Some(f))
-									case _ =>
-										("", None)
-								})
-							})
-						}).toMap)
-					case _ =>
-						log.debug("Update classifieres failed!")
-						None
-				}).getOrElse(Map.empty[String, Option[File]])
+				val artifactMap = loadArtifactMap(ctx)
 
 				val procLib = processResult[Attributed[File]](createClasspathEntry(Library, bd, artifactMap)_)(f => f) _
-					def procSrc(outputPath: Option[File] = None) = processResult[File](createClasspathEntry(Source, bd, artifactMap, outputPath)_)(f => Attributed.blank(f))_
+					def procSrc(outputPath: Option[File] = None) = processResult[File](f => {
+						if (!f.data.exists) log.warn("""The source directory "%s" for project %s does not exist!""".format(f.data, name))
+						createClasspathEntry(Source, bd, artifactMap, outputPath)(f)
+					})(f => Attributed.blank(f))_
 
 				val outputTest = get(ctx.ref, Keys.classDirectory, Test)
 				val sources = eval(ctx.ref, Keys.sources, Compile).map(procSrc()(_)).getOrElse(Set.empty[ClasspathEntry])
@@ -140,9 +177,9 @@ case class ClasspathFile(ctx: ProjectCtx) {
 				val plibs = eval(ctx.ref, Keys.externalDependencyClasspath, Provided).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
 
 				val output = get(ctx.ref, Keys.classDirectory, Compile).map(cd => {
-						Set(ClasspathEntry(Output, IO.relativize(bd, cd).getOrElse(cd.getAbsolutePath)))
-					}).getOrElse(Set.empty[ClasspathEntry])
-					
+					Set(ClasspathEntry(Output, IO.relativize(bd, cd).getOrElse(cd.getAbsolutePath)))
+				}).getOrElse(Set.empty[ClasspathEntry])
+
 				val classpath = clibs ++
 					tlibs ++
 					rlibs ++
@@ -157,7 +194,10 @@ case class ClasspathFile(ctx: ProjectCtx) {
 					resourcesTest ++
 					processProjectDependencies(ctx.projectBase) ++
 					output
-				log.debug("Classpath entries:%n%s".format(classpath.map(n => n.path + " ---> " + n.kind).mkString("\t", "\n\t", "")))
+				log.debug("Classpath entries:%n%s".format(
+					classpath.map(n => {
+						"%10s [%n        lib=%40s,%n       src=%400sn.path%n    ]".format(n.kind, n.path, n.srcPath.getOrElse("<none>"))
+					}).mkString("    ", "\n    ", "")))
 				classpath
 			}
 

@@ -9,11 +9,11 @@ Just like sbt this software is distributed under the BSD License (http://www.ope
 ## Features
  
  * Capable of generating projects for 
-  * Android
-  * Scala
-  * Java
-  * SbtEclipseIntegration
-  * more to come soon...
+ ** Android
+ ** Scala
+ ** Java
+ ** SbtEclipseIntegration
+ ** more to come soon...
  * Only depends on sbt and scala-library no dependencies hell when mixing with other plugins.
  * Open for anybody to contribute on [sbteclipsify github][1]
  * true multiproject support
@@ -62,9 +62,15 @@ You can also combine different natures to produce more complex natures
 
 ## Using the Plugin 
 When everything is setup correctly you will have a new action named "eclipse". 
-Calling it will generate a .project and a .classpathfile in the rootdirectory of your projects. All dependent projects will also be generated. 
 
-Now all you need to do is import the Project into your Eclipse workspace as an existing Project and everything should work.
+The following options are available for the eclipse command:
+ 
+ * jar-deps - Create dependenten projects as libraries that refer to the jars in the build directory of those projects. Projects are build when nessecary.
+ * with-sources - Create source entries for libariers which provide sources. This option downloads the sources from the repository when nessecary. 
+
+If everything went well you can import the Project via "File -> Import... -> General/Existing Projects into Workspace" into your Eclipse workspace.
+
+If you encounter an error please report an issue at [sbteclipsify github][1]
 
 ## Reporting issues
 Issues can be reported at [sbteclipsify github][1]

@@ -28,9 +28,15 @@
  */
 package de.element34.sbteclipsify
 
-import sbt._ 
+import sbt._
 import sbt.complete._
 import sbt.complete.Parsers._
+
+object Arguments extends Enumeration {
+	type Arguments = Value
+	val JAR_DEPS = Value("jar-deps")
+	val WITH_SOURCES = Value("with-sources")
+}
 
 /**
  * Defines the plugin with the "eclipse" task for sbt
@@ -38,37 +44,38 @@ import sbt.complete.Parsers._
 object Eclipsify extends Plugin {
 	import CommandSupport.logger
 	import Keys._
-
-	override lazy val settings = Seq(commands += eclipse) 
+	import Arguments._
+	
+	override lazy val settings = Seq(commands += eclipse)
 
 	val description = SettingKey[String]("description")
 	val nature = SettingKey[ProjectNature]("nature")
-	
-	lazy val argFormat = (Space ~> "jar-deps" | Space ~> "with-source").*
-	
+
+	lazy val argFormat = (Space ~> JAR_DEPS.toString | Space ~> WITH_SOURCES.toString).*
+
 	lazy val eclipse = Command("eclipse")(_ => argFormat) { (state, args) =>
 		val log = logger(state)
 
-		log.debug("Args=%s".format(args))
-		
+		log.debug("Args=%s".format(args.map(Arguments.withName(_))))
+
 		val currProject = Project.current(state)
 		log.debug("Current project: %s" format (currProject))
 
 		val extracted = Project.extract(state)
 		val structure = extracted.structure
 
-		def get[A] = Utils.setting[A](structure)_
-		
+			def get[A] = Utils.setting[A](structure)_
+
 		get(currProject, Keys.baseDirectory, Compile).map(baseDir => {
-		
+
 			for (ref <- structure.allProjectRefs) {
-	
-				val name = get(ref, Keys.name, Compile)
-				ProjectFile(ProjectCtx(baseDir, ref, state)).writeFile match {
+				val ctx = ProjectCtx(baseDir, ref, state, args.map(Arguments.withName(_)))
+				val name = get(ref, Keys.name, Compile).getOrElse("<Unresolved>")
+				ProjectFile(ctx).writeFile match {
 					case None => log.info("written .project for %s" format name)
 					case Some(err) => log.error("Unable to write .project for %s due to %s".format(name, err))
 				}
-				ClasspathFile(ProjectCtx(baseDir, ref, state, args)).writeFile match {
+				ClasspathFile(ctx).writeFile match {
 					case None => log.info("written .classpath for %s" format name)
 					case Some(err) => log.error("Unable to write .classpath for %s due to %s".format(name, err))
 				}

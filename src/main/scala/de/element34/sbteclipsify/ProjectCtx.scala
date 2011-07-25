@@ -28,10 +28,11 @@
  */
 package de.element34.sbteclipsify
 
-import sbt._
+import Arguments._
+import sbt._ 
 import java.io.File
 
 /**
  * Context object to easily pass context information to dependent classes
  */
-case class ProjectCtx(projectBase: File, ref: ProjectRef, state: State, args: Seq[String] = Nil)
+case class ProjectCtx(projectBase: File, ref: ProjectRef, state: State, args: Seq[Arguments] = Nil)
