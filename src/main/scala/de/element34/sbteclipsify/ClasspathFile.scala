@@ -154,11 +154,12 @@ case class ClasspathFile(ctx: ProjectCtx) {
 
 				val artifactMap = loadArtifactMap(ctx)
 
-				val procLib = processResult[Attributed[File]](createClasspathEntry(Library, bd, artifactMap)_)(f => f) _
 					def procSrc(outputPath: Option[File] = None) = processResult[File](f => {
 						if (!f.data.exists) log.warn("""The source directory "%s" for project %s does not exist!""".format(f.data, name))
 						createClasspathEntry(Source, bd, artifactMap, outputPath)(f)
 					})(f => Attributed.blank(f))_
+
+				val procLib = processResult[Attributed[File]](createClasspathEntry(Library, bd, artifactMap)_)(f => f) _
 
 				val outputTest = get(ctx.ref, Keys.classDirectory, Test)
 				val sources = eval(ctx.ref, Keys.sources, Compile).map(procSrc()(_)).getOrElse(Set.empty[ClasspathEntry])
