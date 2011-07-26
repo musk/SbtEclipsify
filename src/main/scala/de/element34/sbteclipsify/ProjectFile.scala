@@ -63,10 +63,10 @@ case class ProjectFile(ctx: ProjectCtx) {
 			<comment>{ get(ctx.ref, Eclipsify.description, Compile).getOrElse("") }</comment>
 			<projects>{ createSubProjects }</projects>
 			<buildSpec>
-				{ nature.builder.map(b => <buildCommand><name>{ b }</name></buildCommand>) }
+				{ nature.builder.distinct.map(b => <buildCommand><name>{ b }</name></buildCommand>) }
 			</buildSpec>
 			<natures>
-				{ nature.nature.map(n => <nature>{ n }</nature>) }
+				{ nature.nature.distinct.map(n => <nature>{ n }</nature>) }
 			</natures>
 		</projectDescription>
 
