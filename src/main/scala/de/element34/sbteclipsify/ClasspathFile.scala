@@ -62,6 +62,7 @@ case class ClasspathFile(ctx: ProjectCtx) {
 	def createClasspathEntry(kind: Kind, base: File, artifacts: Map[String, Option[File]], outputPath: Option[File] = None)(file: Attributed[File]): Option[ClasspathEntry] = {
 		val exclude: FileFilter = filter(Keys.defaultExcludes, confs) && filter(Keys.sourceFilter, confs)
 		val f = file.data
+		log.debug("Processing %s".format(f))
 		val result = f.getName == ScalaLib || exclude.accept(f)
 		log.debug("%s filtered %b".format(f, result))
 		if (!result) {
@@ -75,13 +76,16 @@ case class ClasspathFile(ctx: ProjectCtx) {
 			None
 	}
 
-	def processResult[A](classpathBuilder: Attributed[File] => Option[ClasspathEntry])(conv: A => Attributed[File])(res: Result[Seq[A]]): Set[ClasspathEntry] = res.toEither match {
+	def unpackResult[A](result: Result[Seq[A]], error: => String): Seq[A] = result.toEither match {
 		case Right(files) =>
-			files.map(f => classpathBuilder(conv(f))).filter(_ match { case Some(_) => true; case None => false }).map(_.get).toSet
+			files
 		case Left(inc) =>
-			log.error("Unable to resolve dependencies! %s".format(inc))
-			Set.empty[ClasspathEntry]
+			log.error(error format (inc))
+			Seq.empty[A]
 	}
+
+	def processSeq(seq: Seq[Attributed[File]], classpathBuilder: Attributed[File] => Option[ClasspathEntry]): Set[ClasspathEntry] =
+		seq.map(classpathBuilder(_)).filter(_ match { case Some(_) => true; case None => false }).map(_.get).toSet
 
 	def loadArtifactMap(ctx: ProjectCtx): Map[String, Option[File]] = if (ctx.args.contains(WITH_SOURCES)) {
 		log.debug("Getting sources!")
@@ -154,18 +158,24 @@ case class ClasspathFile(ctx: ProjectCtx) {
 
 				val artifactMap = loadArtifactMap(ctx)
 
-					def procSrc(outputPath: Option[File] = None) = processResult[File](f => {
-						if (!f.data.exists) log.warn("""The source directory "%s" for project %s does not exist!""".format(f.data, name))
-						createClasspathEntry(Source, bd, artifactMap, outputPath)(f)
-					})(f => Attributed.blank(f))_
+					def procSrc(files: Seq[File], outputPath: Option[File] = None): Set[ClasspathEntry] = processSeq(files.map(f => {
+						log.debug("Processing file %s".format(f))
+						Attributed.blank(f)
+					}), f => {
+						if (!f.data.exists) {
+							log.warn("""The source directory "%s" for project %s does not exist! Skipping creating an entry for it.""".format(f.data, name))
+							None
+						} else createClasspathEntry(Source, bd, artifactMap, outputPath)(f)
+					})
 
-				val procLib = processResult[Attributed[File]](createClasspathEntry(Library, bd, artifactMap)_)(f => f) _
+					def procLib(result: Result[Classpath]): Set[ClasspathEntry] =
+						processSeq(unpackResult(result, "Unable to resolve dependencies! %s"), createClasspathEntry(Library, bd, artifactMap)_)
 
 				val outputTest = get(ctx.ref, Keys.classDirectory, Test)
-				val sources = eval(ctx.ref, Keys.sources, Compile).map(procSrc()(_)).getOrElse(Set.empty[ClasspathEntry])
-				val sourcesTest = eval(ctx.ref, Keys.sources, Test).map(procSrc(outputTest)(_)).getOrElse(Set.empty[ClasspathEntry])
-				val resources = eval(ctx.ref, Keys.resources, Compile).map(procSrc()(_)).getOrElse(Set.empty[ClasspathEntry])
-				val resourcesTest = eval(ctx.ref, Keys.resources, Test).map(procSrc(outputTest)(_)).getOrElse(Set.empty[ClasspathEntry])
+				val sources = get(ctx.ref, Keys.sourceDirectories, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
+				val sourcesTest = get(ctx.ref, Keys.sourceDirectories, Test).map(procSrc(_, outputTest)).getOrElse(Set.empty[ClasspathEntry])
+				val resources = get(ctx.ref, Keys.resourceDirectories, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
+				val resourcesTest = get(ctx.ref, Keys.resourceDirectories, Test).map(procSrc(_, outputTest)).getOrElse(Set.empty[ClasspathEntry])
 
 				val compileJars = eval(ctx.ref, Keys.unmanagedClasspath, Compile).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
 				val testJars = eval(ctx.ref, Keys.unmanagedClasspath, Test).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
@@ -194,11 +204,12 @@ case class ClasspathFile(ctx: ProjectCtx) {
 					resources ++
 					resourcesTest ++
 					processProjectDependencies(ctx.projectBase) ++
+					get(ctx.ref, Eclipsify.nature, Compile).getOrElse(ProjectType.Scala).container.map(ClasspathEntry(Container, _))
 					output
 				log.debug("Classpath entries:%n%s".format(
 					classpath.map(n => {
-						"%10s [%n        lib=%40s,%n       src=%400sn.path%n    ]".format(n.kind, n.path, n.srcPath.getOrElse("<none>"))
-					}).mkString("    ", "\n    ", "")))
+						"%s [%n  lib=%s,%n  src=%s%n]".format(n.kind, n.path, n.srcPath.getOrElse("<none>"))
+					}).mkString("\n")))
 				classpath
 			}
 
