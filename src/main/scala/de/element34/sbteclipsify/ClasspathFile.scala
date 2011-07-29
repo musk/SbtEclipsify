@@ -88,8 +88,8 @@ case class ClasspathFile(ctx: ProjectCtx) {
 		seq.map(classpathBuilder(_)).filter(_ match { case Some(_) => true; case None => false }).map(_.get).toSet
 
 	def loadArtifactMap(ctx: ProjectCtx): Map[String, Option[File]] = if (ctx.args.contains(WITH_SOURCES)) {
-		log.debug("Getting sources!")
-		confs.map(c => {
+		log.info("Retrieving sources...")
+		val map = confs.map(c => {
 			eval(ctx.ref, Keys.updateClassifiers, Compile).flatMap(_.toEither match {
 				case Right(t) =>
 					Some(t.configurations.flatMap(c => {
@@ -107,6 +107,8 @@ case class ClasspathFile(ctx: ProjectCtx) {
 					None
 			}).getOrElse(Map.empty)
 		}).foldLeft(Map.empty[String, Option[File]])(_ ++ _)
+		log.info("...done")
+		map
 	} else {
 		log.debug("Skipping source retrieval!")
 		Map.empty
@@ -163,7 +165,7 @@ case class ClasspathFile(ctx: ProjectCtx) {
 						Attributed.blank(f)
 					}), f => {
 						if (!f.data.exists) {
-							log.warn("""The source directory "%s" for project %s does not exist! Skipping creating an entry for it.""".format(f.data, name))
+							log.warn("""The source directory "%s" for project %s does not exist! Skipping entry creation.""".format(f.data, name))
 							None
 						} else createClasspathEntry(Source, bd, artifactMap, outputPath)(f)
 					})

@@ -63,7 +63,7 @@ case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], out
 				}
 			}
 		</classpathentry>
-		cp % optionalAttribute("sourcePath", srcPath) %
+		cp % optionalAttribute("sourcepath", srcPath) %
 			optionalAttribute("output", outputPath) %
 			optionalAttribute("combineaccessrule", combinAccessRule.map(_.toString)) %
 			filter.toMetaData
