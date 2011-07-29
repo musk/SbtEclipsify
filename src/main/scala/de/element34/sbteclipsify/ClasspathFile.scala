@@ -172,10 +172,10 @@ case class ClasspathFile(ctx: ProjectCtx) {
 						processSeq(unpackResult(result, "Unable to resolve dependencies! %s"), createClasspathEntry(Library, bd, artifactMap)_)
 
 				val outputTest = get(ctx.ref, Keys.classDirectory, Test)
-				val sources = get(ctx.ref, Keys.sourceDirectories, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
-				val sourcesTest = get(ctx.ref, Keys.sourceDirectories, Test).map(procSrc(_, outputTest)).getOrElse(Set.empty[ClasspathEntry])
-				val resources = get(ctx.ref, Keys.resourceDirectories, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
-				val resourcesTest = get(ctx.ref, Keys.resourceDirectories, Test).map(procSrc(_, outputTest)).getOrElse(Set.empty[ClasspathEntry])
+				val sources = get(ctx.ref, Keys.unmanagedSourceDirectories, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
+				val sourcesTest = get(ctx.ref, Keys.unmanagedSourceDirectories, Test).map(procSrc(_, outputTest)).getOrElse(Set.empty[ClasspathEntry])
+				val resources = get(ctx.ref, Keys.unmanagedResourceDirectories, Compile).map(procSrc(_)).getOrElse(Set.empty[ClasspathEntry])
+				val resourcesTest = get(ctx.ref, Keys.unmanagedResourceDirectories, Test).map(procSrc(_, outputTest)).getOrElse(Set.empty[ClasspathEntry])
 
 				val compileJars = eval(ctx.ref, Keys.unmanagedClasspath, Compile).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
 				val testJars = eval(ctx.ref, Keys.unmanagedClasspath, Test).map(procLib(_)).getOrElse(Set.empty[ClasspathEntry])
@@ -208,7 +208,7 @@ case class ClasspathFile(ctx: ProjectCtx) {
 					output
 				log.debug("Classpath entries:%n%s".format(
 					classpath.map(n => {
-						"%s [%n  lib=%s,%n  src=%s%n]".format(n.kind, n.path, n.srcPath.getOrElse("<none>"))
+						"%s%n  lib=%s,%n  src=%s%n".format(n.kind, n.path, n.srcPath.getOrElse("<none>"))
 					}).mkString("\n")))
 				classpath
 			}

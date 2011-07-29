@@ -36,6 +36,7 @@ object Arguments extends Enumeration {
 	type Arguments = Value
 	val JAR_DEPS = Value("jar-deps")
 	val WITH_SOURCES = Value("with-sources")
+	val VERSION = Value("version")
 }
 
 /**
@@ -48,41 +49,50 @@ object Eclipsify extends Plugin {
 	
 	override lazy val settings = Seq(commands += eclipse)
 
+	val ECLIPSIFYVERSION = "0.10.0-SNAPSHOT"
 	val description = SettingKey[String]("description")
 	val nature = SettingKey[ProjectNature]("nature")
 
-	lazy val argFormat = (Space ~> JAR_DEPS.toString | Space ~> WITH_SOURCES.toString).*
+	lazy val JARS = Space ~> JAR_DEPS.toString
+	lazy val SRCS = Space ~> WITH_SOURCES.toString
+	lazy val VS = Space ~> VERSION.toString
+	lazy val argParser = VS | JARS | SRCS | (JARS ~> SRCS ) | ( SRCS ~> JARS)
+	lazy val argFormat: Parser[List[String]] = Parser.mapParser[String, List[String]](argParser, {f => List(f)})
 
-	lazy val eclipse = Command("eclipse")(_ => argFormat) { (state, args) =>
+	lazy val eclipse = Command("eclipse")(_ => argFormat) { (state, input) =>
 		val log = logger(state)
+		val args = input.map(Arguments.withName(_))
+		log.debug("Args=%s".format(args))
 
-		log.debug("Args=%s".format(args.map(Arguments.withName(_))))
+		if (args.contains(VERSION)) {
+			log.info("Version: %s".format(ECLIPSIFYVERSION))
+		} else {
+			val currProject = Project.current(state)
+			log.debug("Current project: %s" format (currProject))
 
-		val currProject = Project.current(state)
-		log.debug("Current project: %s" format (currProject))
+			val extracted = Project.extract(state)
+			val structure = extracted.structure
 
-		val extracted = Project.extract(state)
-		val structure = extracted.structure
+				def get[A] = Utils.setting[A](structure)_
 
-			def get[A] = Utils.setting[A](structure)_
+			get(currProject, Keys.baseDirectory, Compile).map(baseDir => {
 
-		get(currProject, Keys.baseDirectory, Compile).map(baseDir => {
-
-			for (ref <- structure.allProjectRefs) {
-				val ctx = ProjectCtx(baseDir, ref, state, args.map(Arguments.withName(_)))
-				val name = get(ref, Keys.name, Compile).getOrElse("<Unresolved>")
-				ProjectFile(ctx).writeFile match {
-					case None => log.info("written .project for %s" format name)
-					case Some(err) => log.error("Unable to write .project for %s due to %s".format(name, err))
+				for (ref <- structure.allProjectRefs) {
+					val ctx = ProjectCtx(baseDir, ref, state, args)
+					val name = get(ref, Keys.name, Compile).getOrElse("<Unresolved>")
+					ProjectFile(ctx).writeFile match {
+						case None => log.info("written .project for %s" format name)
+						case Some(err) => log.error("Unable to write .project for %s due to %s".format(name, err))
+					}
+					ClasspathFile(ctx).writeFile match {
+						case None => log.info("written .classpath for %s" format name)
+						case Some(err) => log.error("Unable to write .classpath for %s due to %s".format(name, err))
+					}
 				}
-				ClasspathFile(ctx).writeFile match {
-					case None => log.info("written .classpath for %s" format name)
-					case Some(err) => log.error("Unable to write .classpath for %s due to %s".format(name, err))
-				}
+			}) match {
+				case None => log.error("Base directory for %s cannot be resolved!".format(get(currProject, Keys.name, Compile).getOrElse("<Unresolved>")))
+				case _ => log.info("You may now import your projects in Eclipse")
 			}
-		}) match {
-			case None => log.error("Base directory for %s cannot be resolved!".format(get(currProject, Keys.name, Compile).getOrElse("<Unresolved>")))
-			case _ => log.info("You may now import your projects in Eclipse")
 		}
 		state
 	}
