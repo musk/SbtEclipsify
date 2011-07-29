@@ -1,6 +1,6 @@
 # SbtEclipsify
 
-Plugin for [sbt 0.10.1[[5] for creating __.classpath__ and __.project__ files for the [Ecipse IDE][2].
+Plugin for [sbt 0.10.1][5] for creating __.classpath__ and __.project__ files for the [Ecipse IDE][2].
 If you need to use this plugin with sbt version prior to 0.10.0 then you need to use version 0.8.x
 
 ## License
@@ -56,9 +56,11 @@ All available natures can be viewed in the corresponding source file for conveni
  * __Plugin__ A Eclipse plugin project using Java
  * __ScalaPlugin__ A Eclipse plugin project using Scala
 
-To add simply add the following line to your build.sbt file
+To add simply add a line like the following to your build.sbt file. 
 
 	nature := de.element34.sbteclipsify.ProjectType.Java
+
+For your own project you should choose the appropriate nature. If you are doing a scala project you don't need to set this as __Scala__ is the default setting for nature.
 
 You can also combine different natures to produce more complex natures
  
