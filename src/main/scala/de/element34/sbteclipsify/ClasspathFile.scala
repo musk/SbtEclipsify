@@ -206,7 +206,7 @@ case class ClasspathFile(ctx: ProjectCtx) {
 					resources ++
 					resourcesTest ++
 					processProjectDependencies(ctx.projectBase) ++
-					get(ctx.ref, Eclipsify.nature, Compile).getOrElse(ProjectType.Scala).container.map(ClasspathEntry(Container, _))
+					nature(ctx.ref, structure).container.map(ClasspathEntry(Container, _))
 					output
 				log.debug("Classpath entries:%n%s".format(
 					classpath.map(n => {

@@ -62,6 +62,7 @@ case object AndroidNature extends ProjectNature {
 		"com.android.ide.eclipse.adt.ApkBuilder")
 	override val nature = List("org.eclipse.jdt.core.javanature",
 			"com.android.ide.eclipse.adt.AndroidNature")
+	override val container = List("com.android.ide.eclipse.adt.ANDROID_FRAMEWORK")
 }
 
 case object SbtEclipseIntegrationNature extends ProjectNature {
@@ -69,6 +70,15 @@ case object SbtEclipseIntegrationNature extends ProjectNature {
 }
 
 object ProjectType {
+	def apply(name: String) = name match {
+		case "java" => Java
+		case "scala" => Scala
+		case "android" => Android
+		case "scalaandroid" => ScalaAndroid
+		case "plugin" => Plugin
+		case "scalaplugin" => ScalaPlugin 
+	}
+	
 	val Java: ProjectNature = JavaNature
 	val Scala: ProjectNature = ScalaNature combine JavaNature
 	val Android: ProjectNature = AndroidNature

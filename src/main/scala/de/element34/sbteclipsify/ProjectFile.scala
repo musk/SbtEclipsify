@@ -51,13 +51,12 @@ case class ProjectFile(ctx: ProjectCtx) {
 	
 	val name = get(ctx.ref, Keys.name, Compile).getOrElse("No name available")
 
+	lazy val nature = Utils.nature(ctx.ref, structure)
 	/**
 	 * Writes the .project file to the file system
 	 * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>
 	 */
 	def writeFile: Option[String] = {
-		lazy val nature = get(ctx.ref, Eclipsify.nature, Compile).getOrElse(ProjectType.Scala)
-
 		lazy val projectContent = <projectDescription>
 			<name>{ name }</name>
 			<comment>{ get(ctx.ref, Eclipsify.description, Compile).getOrElse("") }</comment>

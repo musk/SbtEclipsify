@@ -46,18 +46,21 @@ object Eclipsify extends Plugin {
 	import CommandSupport.logger
 	import Keys._
 	import Arguments._
-	
+
 	override lazy val settings = Seq(commands += eclipse)
 
 	val ECLIPSIFYVERSION = "0.10.0-SNAPSHOT"
 	val description = SettingKey[String]("description")
-	val nature = SettingKey[ProjectNature]("nature")
+	val nature = SettingKey[String]("nature", "Declarative name of the project type to create.")
+	val projectNature = SettingKey[ProjectNature]("project-nature", "ProjectNature of the project.")
 
 	lazy val JARS = Space ~> JAR_DEPS.toString
 	lazy val SRCS = Space ~> WITH_SOURCES.toString
 	lazy val VS = Space ~> VERSION.toString
-	lazy val argParser = VS | JARS | SRCS | (JARS ~> SRCS ) | ( SRCS ~> JARS)
-	lazy val argFormat: Parser[List[String]] = Parser.mapParser[String, List[String]](argParser, {f => List(f)})
+	lazy val argParser = Parser.opt(VS | JARS | SRCS | (JARS ~> SRCS) | (SRCS ~> JARS))
+	lazy val argFormat: Parser[List[String]] = Parser.mapParser[Option[String], List[String]](argParser, { f =>
+		f.map(List(_)).getOrElse(List.empty[String])
+	})
 
 	lazy val eclipse = Command("eclipse")(_ => argFormat) { (state, input) =>
 		val log = logger(state)

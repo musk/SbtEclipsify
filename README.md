@@ -43,29 +43,36 @@ See "Installing the Plugin" for instruction of installing it in your projects.
 
 ## Setup of the plugin
 The plugin can be configured for the type of project you want to generate. This can be achived by specifing the nature your project has. 
-For this purpose the plugin introduces a new setting
+For this purpose the plugin introduces new settings
  
-    SettingsKey[de.element34.sbteclipsify.ProjectNature]("nature")
+    SettingsKey[String]("nature", "Declarative name of the project type to create")
+    SettingsKey[de.element34.sbteclipsify.ProjectNature]("project-nature", "Actual ProjectNature of the project")
 
-All available natures can be viewed in the corresponding source file for convenience the following natures are predefined in _de.element34.sbteclipsify.ProjectType_
+All available natures can be viewed in the corresponding source file for convenience the following natures are predefined in _de.element34.sbteclipsify.ProjectType_. Each one can be referenced via a String in order to prevent dependencies on the SbtEclipsify Plugin.
  
- * __Java__ A simple java project
- * __Scala__ A Scala project this is the default
- * __Android__ A Android plugin using Java
- * __ScalaAndroid__ A Android plugin using Scala
- * __Plugin__ A Eclipse plugin project using Java
- * __ScalaPlugin__ A Eclipse plugin project using Scala
+ * __Java__ A simple java project. Use _"java"_ as the nature setting.
+ * __Scala__ A Scala project this is the default. Use _"scala"_ as the nature setting.
+ * __Android__ A Android plugin using Java. Use _"android"_ as the nature setting.
+ * __ScalaAndroid__ A Android plugin using Scala. Use _"scalaandroid"_ as the nature setting. 
+ * __Plugin__ A Eclipse plugin project using Java. Use _"plugin"_ as the nature setting.
+ * __ScalaPlugin__ A Eclipse plugin project using Scala. Use _"scalaplugin"_ as the nature setting.
 
 To add simply add a line like the following to your build.sbt file. 
 
-	nature := de.element34.sbteclipsify.ProjectType.Java
+        nature := "java"
+
+or if you prefer to use project-nature setting use
+
+	project-nature := de.element34.sbteclipsify.ProjectType.Java
+
+Be aware that the latter makes your build.sbt depend on the code of SbtEclipsify and will throw an error when the plugin is not part of your project.
 
 For your own project you should choose the appropriate nature. If you are doing a scala project you don't need to set this as __Scala__ is the default setting for nature.
 
-You can also combine different natures to produce more complex natures
+You can also combine different natures to produce more complex natures. This is only possible when using project-nature
  
 	import de.element34.sbteclipsify.ProjectNature._
-	nature := JavaNature combine ScalaNature combine AndroidNature
+	project-nature := JavaNature combine ScalaNature combine AndroidNature
 
 ## Using the Plugin 
 When everything is setup correctly you will have a new action named __eclipse__. 
