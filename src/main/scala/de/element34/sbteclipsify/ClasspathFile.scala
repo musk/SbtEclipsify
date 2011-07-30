@@ -206,7 +206,7 @@ case class ClasspathFile(ctx: ProjectCtx) {
 					resources ++
 					resourcesTest ++
 					processProjectDependencies(ctx.projectBase) ++
-					nature(ctx.ref, structure).container.map(ClasspathEntry(Container, _))
+					nature(ctx.ref, structure, log).container.map(ClasspathEntry(Container, _)) ++
 					output
 				log.debug("Classpath entries:%n%s".format(
 					classpath.map(n => {

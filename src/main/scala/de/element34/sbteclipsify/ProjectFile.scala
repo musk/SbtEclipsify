@@ -51,7 +51,7 @@ case class ProjectFile(ctx: ProjectCtx) {
 	
 	val name = get(ctx.ref, Keys.name, Compile).getOrElse("No name available")
 
-	lazy val nature = Utils.nature(ctx.ref, structure)
+	lazy val nature = Utils.nature(ctx.ref, structure, log)
 	/**
 	 * Writes the .project file to the file system
 	 * @return <code>Some(error)</code> when an error occurred else returns <code>None</code>

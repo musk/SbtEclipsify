@@ -70,13 +70,14 @@ case object SbtEclipseIntegrationNature extends ProjectNature {
 }
 
 object ProjectType {
-	def apply(name: String) = name match {
+	def apply(name: String, log: => sbt.Logger) = name match {
 		case "java" => Java
 		case "scala" => Scala
 		case "android" => Android
 		case "scalaandroid" => ScalaAndroid
 		case "plugin" => Plugin
 		case "scalaplugin" => ScalaPlugin 
+		case d => log.error(""""%s" unknown project type reverting to scala""".format(d)); Scala
 	}
 	
 	val Java: ProjectNature = JavaNature

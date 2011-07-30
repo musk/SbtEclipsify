@@ -39,10 +39,10 @@ object Utils {
 	def evaluate[A](state: State, structure: Load.BuildStructure)(ref: ProjectRef, key: TaskKey[A], config: Configuration) =
 		EvaluateTask.evaluateTask(structure, key in config, state, ref, false, EvaluateTask.SystemProcessors)
 
-	def nature(ref: ProjectRef, structure: Load.BuildStructure): ProjectNature = {
+	def nature(ref: ProjectRef, structure: Load.BuildStructure, logger: Logger): ProjectNature = {
 		setting[ProjectNature](structure)(ref, Eclipsify.projectNature, Provided).
 			getOrElse(
-				setting[String](structure)(ref, Eclipsify.nature, Provided).map(ProjectType(_)).
+				setting[String](structure)(ref, Eclipsify.nature, Provided).map(ProjectType(_, logger)).
 					getOrElse(ProjectType.Scala))
 	}
 }
