@@ -34,6 +34,7 @@ import sbt.complete.Parsers._
 
 object Arguments extends Enumeration {
 	type Arguments = Value
+	val SKIP_ROOT = Value("skip-root")
 	val JAR_DEPS = Value("jar-deps")
 	val WITH_SOURCES = Value("with-sources")
 	val VERSION = Value("version")
@@ -46,6 +47,7 @@ object Eclipsify extends Plugin {
 	import CommandSupport.logger
 	import Keys._
 	import Arguments._
+	import Parser._
 
 	override lazy val settings = Seq(commands += eclipse)
 
@@ -54,47 +56,53 @@ object Eclipsify extends Plugin {
 	val nature = SettingKey[String]("nature", "Declarative name of the project type to create.")
 	val projectNature = SettingKey[ProjectNature]("project-nature", "ProjectNature of the project.")
 
-	lazy val JARS = Space ~> JAR_DEPS.toString
-	lazy val SRCS = Space ~> WITH_SOURCES.toString
-	lazy val VS = Space ~> VERSION.toString
-	lazy val argParser = Parser.opt(VS | JARS | SRCS | (JARS ~> SRCS) | (SRCS ~> JARS))
-	lazy val argFormat: Parser[List[String]] = Parser.mapParser[Option[String], List[String]](argParser, { f =>
-		f.map(List(_)).getOrElse(List.empty[String])
-	})
+	lazy val SKIP: Parser[String] = SKIP_ROOT.toString
+	lazy val JARS: Parser[String] = JAR_DEPS.toString
+	lazy val SRCS: Parser[String] = WITH_SOURCES.toString
+	lazy val VS: Parser[String] = Space ~> VERSION.toString
+	lazy val COMB: Parser[String] = Space ~> (SKIP | JARS | SRCS)
+	lazy val argFormat: Parser[Seq[String]] = Parser.mapParser[String, List[String]](VS, List(_)) | (COMB).*
 
 	lazy val eclipse = Command("eclipse")(_ => argFormat) { (state, input) =>
 		val log = logger(state)
-		val args = input.map(Arguments.withName(_))
-		log.debug("Args=%s".format(args))
-
+		val args: Set[Arguments] = input.map(s => Arguments.withName(s)).toSet
+		log.info("Starting eclipse %s".format(args.mkString(" ")))
 		if (args.contains(VERSION)) {
 			log.info("Version: %s".format(ECLIPSIFYVERSION))
 		} else {
+			import Utils._
+
 			val currProject = Project.current(state)
 			log.debug("Current project: %s" format (currProject))
 
 			val extracted = Project.extract(state)
 			val structure = extracted.structure
 
-				def get[A] = Utils.setting[A](structure)_
+				def get[A] = setting[A](structure)_
 
 			get(currProject, Keys.baseDirectory, Compile).map(baseDir => {
-
-				for (ref <- structure.allProjectRefs) {
-					val ctx = ProjectCtx(baseDir, ref, state, args)
-					val name = get(ref, Keys.name, Compile).getOrElse("<Unresolved>")
-					ProjectFile(ctx).writeFile match {
-						case None => log.info("written .project for %s" format name)
-						case Some(err) => log.error("Unable to write .project for %s due to %s".format(name, err))
+				for (ref <- structure.allProjectRefs) yield {
+					val projectName = get(ref, Keys.name, Compile).getOrElse("<Unresolved>")
+					if (ref == currProject && args.contains(SKIP_ROOT)) {
+						log.debug("Skipping root project %s" format projectName)
+					} else {
+						val ctx = ProjectCtx(baseDir, ref, state, args)
+						ProjectFile(ctx).writeFile match {
+							case None => log.info("written .project for %s" format projectName)
+							case Some(err) => log.error("Unable to write .project for %s due to %s".format(projectName, err))
+						}
+						ClasspathFile(ctx).writeFile match {
+							case None => log.info("written .classpath for %s" format projectName)
+							case Some(err) => log.error("Unable to write .classpath for %s due to %s".format(projectName, err))
+						}
 					}
-					ClasspathFile(ctx).writeFile match {
-						case None => log.info("written .classpath for %s" format name)
-						case Some(err) => log.error("Unable to write .classpath for %s due to %s".format(name, err))
-					}
+					Utils.nature(ref, structure, log).extendedInfo
 				}
 			}) match {
-				case None => log.error("Base directory for %s cannot be resolved!".format(get(currProject, Keys.name, Compile).getOrElse("<Unresolved>")))
-				case _ => log.info("You may now import your projects in Eclipse")
+				case None => log.error("Base directory for %s cannot be resolved!" format get(currProject, Keys.name, Compile).getOrElse("<Unresolved>"))
+				case Some(info) => 
+					log.info(info.flatMap(s => s).distinct.mkString("* ", "\n* ", ""))
+					log.info("You may now import your projects in Eclipse")
 			}
 		}
 		state

@@ -206,8 +206,9 @@ case class ClasspathFile(ctx: ProjectCtx) {
 					resources ++
 					resourcesTest ++
 					processProjectDependencies(ctx.projectBase) ++
-					nature(ctx.ref, structure, log).container.map(ClasspathEntry(Container, _)) ++
-					output
+					output ++
+					nature(ctx.ref, structure, log).container.map(ClasspathEntry(Container, _))
+
 				log.debug("Classpath entries:%n%s".format(
 					classpath.map(n => {
 						"%s%n  lib=%s,%n  src=%s%n".format(n.kind, n.path, n.srcPath.getOrElse("<none>"))

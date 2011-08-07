@@ -45,4 +45,6 @@ object Utils {
 				setting[String](structure)(ref, Eclipsify.nature, Provided).map(ProjectType(_, logger)).
 					getOrElse(ProjectType.Scala))
 	}
+	
+	def unless(predicate: Boolean)(body: => Unit) = if(!predicate) body
 }

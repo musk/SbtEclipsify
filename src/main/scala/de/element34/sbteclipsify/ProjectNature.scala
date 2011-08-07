@@ -29,12 +29,16 @@
 package de.element34.sbteclipsify
 
 sealed trait ProjectNature {
-	case class ComposedProject(override val builder: List[String], override val nature: List[String], override val container: List[String]) extends ProjectNature
+	case class ComposedProject(override val builder: List[String],
+		override val nature: List[String],
+		override val container: List[String],
+		override val extendedInfo: List[String]) extends ProjectNature
 	def builder: List[String] = List.empty
 	def nature: List[String] = List.empty
 	def container: List[String] = List.empty
 	def combine(other: ProjectNature): ProjectNature = ComposedProject(builder ++ other.builder,
-		nature ++ other.nature, container ++ other.container)
+		nature ++ other.nature, container ++ other.container, extendedInfo ++ other.extendedInfo)
+	def extendedInfo: List[String] = Nil
 }
 
 case object JavaNature extends ProjectNature {
@@ -47,6 +51,7 @@ case object ScalaNature extends ProjectNature {
 	override val builder = List("org.scala-ide.sdt.core.scalabuilder")
 	override val nature = List("org.scala-ide.sdt.core.scalanature")
 	override val container = List("org.scala-ide.sdt.launching.SCALA_CONTAINER")
+	override val extendedInfo = List("Don't forget to install the Scala IDE Plugin from http://www.scalaide.org/")
 }
 
 case object PluginNature extends ProjectNature {
@@ -61,8 +66,22 @@ case object AndroidNature extends ProjectNature {
 		"org.eclipse.jdt.core.javabuilder",
 		"com.android.ide.eclipse.adt.ApkBuilder")
 	override val nature = List("org.eclipse.jdt.core.javanature",
-			"com.android.ide.eclipse.adt.AndroidNature")
+		"com.android.ide.eclipse.adt.AndroidNature")
 	override val container = List("com.android.ide.eclipse.adt.ANDROID_FRAMEWORK")
+	override val extendedInfo = List("Don't forget to install the ADT Plugin from http://developer.android.com/sdk/eclipse-adt.html")
+}
+
+case object ScalaAndroidNature extends ProjectNature {
+	override val builder = List("com.android.ide.eclipse.adt.ResourceManagerBuilder",
+		"com.android.ide.eclipse.adt.PreCompilerBuilder",
+		"org.scala-ide.sdt.core.scalabuilder",
+		"mobi.celton.treeshaker.TreeshakerBuilder",
+		"com.android.ide.eclipse.adt.ApkBuilder")
+	override val nature = ScalaNature.nature ++
+		AndroidNature.nature ++
+		List("mobi.celton.treeshaker.TreeshakerNature")
+	override val container = AndroidNature.container ++ ScalaNature.container ++ JavaNature.container
+	override val extendedInfo = ScalaNature.extendedInfo ++ AndroidNature.extendedInfo ++ List("Don't forget to install the Treeshaker Plugin from http://treeshaker.googlecode.com")
 }
 
 case object SbtEclipseIntegrationNature extends ProjectNature {
@@ -76,14 +95,14 @@ object ProjectType {
 		case "android" => Android
 		case "scalaandroid" => ScalaAndroid
 		case "plugin" => Plugin
-		case "scalaplugin" => ScalaPlugin 
+		case "scalaplugin" => ScalaPlugin
 		case d => log.error(""""%s" unknown project type reverting to scala""".format(d)); Scala
 	}
-	
+
 	val Java: ProjectNature = JavaNature
 	val Scala: ProjectNature = ScalaNature combine JavaNature
 	val Android: ProjectNature = AndroidNature
-	val ScalaAndroid: ProjectNature = ScalaNature combine AndroidNature
+	val ScalaAndroid: ProjectNature = ScalaAndroidNature
 	val Plugin: ProjectNature = JavaNature combine PluginNature
 	val ScalaPlugin: ProjectNature = ScalaNature combine JavaNature combine PluginNature
 }

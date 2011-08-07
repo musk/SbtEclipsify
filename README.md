@@ -34,6 +34,8 @@ For setting up the plugin see "Using the Plugin in your own project" below.
 ## Requirements 
 If you have scala sources in your project you need to have the [Scala Eclipse plugin][4] installed or else you will not be able to work with the generated project.
 The plugin only adds the scala plugin nature to the project. The scala version used by eclipse cannot be set from this plugin but depends on the eclipse plugin's version. There is currently no way known to the author to use two different scala versions at the same time.
+If you want to use the android nature you have to have the [ADT plugin][6] installed.
+If you want 
 
 ### Building
 SbtEclipsify uses oh wonder [sbt][5] as the build tool.
@@ -53,7 +55,7 @@ All available natures can be viewed in the corresponding source file for conveni
  * __Java__ A simple java project. Use _"java"_ as the nature setting.
  * __Scala__ A Scala project this is the default. Use _"scala"_ as the nature setting.
  * __Android__ A Android plugin using Java. Use _"android"_ as the nature setting.
- * __ScalaAndroid__ A Android plugin using Scala. Use _"scalaandroid"_ as the nature setting. 
+ * __ScalaAndroid__ A Android plugin using Scala. Use _"scalaandroid"_ as the nature setting. This nature assumes that you have the [ADT plugin][6] as well as the [Treeshaker plugin][7] installed.
  * __Plugin__ A Eclipse plugin project using Java. Use _"plugin"_ as the nature setting.
  * __ScalaPlugin__ A Eclipse plugin project using Scala. Use _"scalaplugin"_ as the nature setting.
 
@@ -79,6 +81,8 @@ When everything is setup correctly you will have a new action named __eclipse__.
 
 The following options are available for the eclipse command:
  
+ * __version__ - Prints out the current version of sbtecipsify
+ * __skip-root__ - Skips creation of .project and .classpath file for the root project. 
  * __jar-deps__ - Create dependenten projects as libraries that refer to the jars in the build directory of those projects. Projects are build when nessecary.
  * __with-sources__ - Create source entries for libariers which provide sources. This option downloads the sources from the repository when nessecary. 
 
@@ -97,3 +101,5 @@ None known yet ...
 [3]: http://www.opensource.org/licenses/bsd-license.php
 [4]: http://www.scalaide.org/
 [5]: https://github.com/harrah/xsbt/wiki
+[6]: http://developer.android.com/sdk/eclipse-adt.html
+[7]: http://treeshaker.googlecode.com

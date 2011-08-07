@@ -35,4 +35,4 @@ import java.io.File
 /**
  * Context object to easily pass context information to dependent classes
  */
-case class ProjectCtx(projectBase: File, ref: ProjectRef, state: State, args: Seq[Arguments] = Nil)
+case class ProjectCtx(projectBase: File, ref: ProjectRef, state: State, args: Set[Arguments] = Set.empty)
