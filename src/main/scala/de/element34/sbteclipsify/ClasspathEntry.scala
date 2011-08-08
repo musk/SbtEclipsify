@@ -53,6 +53,9 @@ case object Library extends Kind("lib")
 case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], outputPath: Option[String], combinAccessRule: Option[Boolean], filter: FilterChain, attributes: List[Tuple2[String, String]]) {
 	import scala.xml._
 
+	/**
+	 * @return This <code>ClasspathEntry</code> as a <code>NodeSeq</code>
+	 */
 	def toNodeSeq: NodeSeq = {
 		val cp = <classpathentry kind={ kind.name } path={ path }>
 			{
@@ -73,7 +76,9 @@ case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], out
 	/**
 	 * converts this <code>ClasspathEntry</code > into a xml string representation
 	 * @param sep Defines the leading separater <code>String</code> prepended to each classpathentry
+	 * @deprecated instead use {@link #toNodeSeq} 
 	 */
+	@deprecated("Use toNodeSeq instead", "0.10.0")
 	def mkString(sep: String): String = {
 		sep +
 			"<classpathentry kind=\"" + kind.name + "\"" +
@@ -101,6 +106,7 @@ case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], out
 		}
 	}
 
+	/** returns xml attribute when value is set else returns an empty attribute node */
 	def optionalAttribute(attributeName: String, value: Option[String]): MetaData = value.map(new UnprefixedAttribute(attributeName, _, Node.NoAttributes)).getOrElse(Node.NoAttributes)
 }
 

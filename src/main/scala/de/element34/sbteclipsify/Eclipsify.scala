@@ -63,6 +63,7 @@ object Eclipsify extends Plugin {
 	lazy val COMB: Parser[String] = Space ~> (SKIP | JARS | SRCS)
 	lazy val argFormat: Parser[Seq[String]] = Parser.mapParser[String, List[String]](VS, List(_)) | (COMB).*
 
+	// Define the one and only command this plugin provides 
 	lazy val eclipse = Command("eclipse")(_ => argFormat) { (state, input) =>
 		val log = logger(state)
 		val args: Set[Arguments] = input.map(s => Arguments.withName(s)).toSet
