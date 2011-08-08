@@ -140,9 +140,8 @@ case class ClasspathFile(ctx: ProjectCtx) {
 							f.getAbsolutePath,
 							pkgSrc.map(_.getAbsolutePath)))
 				} else {
-					Project.getProject(d.project, structure).map(x => {
-						val path = IO.relativize(baseDir, x.base).getOrElse(x.base.getAbsolutePath)
-						ClasspathEntry(kind = Source, path = if (path.startsWith("/")) path else ("/" + path), combineAccessRule = Some(false))
+					get(d.project, Keys.name, Provided).map(pName => {
+						ClasspathEntry(kind = Source, path = if (pName.startsWith("/")) pName else ("/" + pName), combineAccessRule = Some(false))
 					})
 				}
 			}).filter(_ match { case Some(_) => true; case None => false }).map(_.get).toSet

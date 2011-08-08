@@ -49,8 +49,8 @@ case object JavaNature extends ProjectNature {
 
 case object ScalaNature extends ProjectNature {
 	override val builder = List("org.scala-ide.sdt.core.scalabuilder")
-	override val nature = List("org.scala-ide.sdt.core.scalanature")
-	override val container = List("org.scala-ide.sdt.launching.SCALA_CONTAINER")
+	override val nature = List("org.scala-ide.sdt.core.scalanature") ++ JavaNature.nature
+	override val container = List("org.scala-ide.sdt.launching.SCALA_CONTAINER") ++ JavaNature.container
 	override val extendedInfo = List("Don't forget to install the Scala IDE Plugin from http://www.scalaide.org/")
 }
 
@@ -100,9 +100,9 @@ object ProjectType {
 	}
 
 	val Java: ProjectNature = JavaNature
-	val Scala: ProjectNature = ScalaNature combine JavaNature
+	val Scala: ProjectNature = ScalaNature
 	val Android: ProjectNature = AndroidNature
 	val ScalaAndroid: ProjectNature = ScalaAndroidNature
 	val Plugin: ProjectNature = JavaNature combine PluginNature
-	val ScalaPlugin: ProjectNature = ScalaNature combine JavaNature combine PluginNature
+	val ScalaPlugin: ProjectNature = ScalaNature combine PluginNature
 }
