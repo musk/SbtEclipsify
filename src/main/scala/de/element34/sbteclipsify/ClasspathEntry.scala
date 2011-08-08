@@ -78,7 +78,6 @@ case class ClasspathEntry(kind: Kind, path: String, srcPath: Option[String], out
 	 * @param sep Defines the leading separater <code>String</code> prepended to each classpathentry
 	 * @deprecated instead use {@link #toNodeSeq} 
 	 */
-	@deprecated("Use toNodeSeq instead", "0.10.0")
 	def mkString(sep: String): String = {
 		sep +
 			"<classpathentry kind=\"" + kind.name + "\"" +
